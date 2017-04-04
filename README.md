@@ -1,14 +1,16 @@
-#Sokoban Solver
+# Sokoban Solver
 
 A Sokoban Solver, written in serial then converted to parallel using std::threads.
 
-##Input File Requirements
+## Input File Requirements
+
 - All integers
 - First number should be height
 - Second number should be width
 - numbers should be separated by whitespace
 
-##Integer Representation
+## Integer Representation
+
 | Integer |  Representation |
 | :-----: |  -------------- |
 | 0 | an empty space |
