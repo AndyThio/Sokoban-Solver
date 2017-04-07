@@ -23,6 +23,8 @@ const int player = 5;
 
 vector<vector<int> > formArena(){
     vector<vector<int> > arena;
+    int player_exist = -1;
+
     string fname;
     cout << "Enter text file name: ";
     cin >> fname;
@@ -33,6 +35,8 @@ vector<vector<int> > formArena(){
      * - First number should be height
      * - Second number should be width
      * - numbers should be separated by whitespace
+     * - Exactly one player must exist
+     * - Do NOT include the border walls outlining your puzzle
      * - See "Types of Spaces" for what numbers to put for different spaces
      */
 
@@ -44,14 +48,21 @@ vector<vector<int> > formArena(){
     for (int i = 0; i < height ; ++i){
         for (int j = 0; j < width; ++j){
             fin >> spot;
+            if(spot == 5){
+                ++player_exist;
+            }
             arena.at(i).push_back(spot);
         }
     }
-
-    return arena;
+    if(player_exist){
+        return arena;
+    }
+    else{
+        cerr << "Player doesn't exist or more than one player"
+        return NULL;
+    }
 }
 
 int main(){
     vector<vector<int> > arena;
-
 }
