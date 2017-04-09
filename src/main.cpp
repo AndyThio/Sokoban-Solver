@@ -77,11 +77,5 @@ int main(){
     gameState arena;
     arena = formArena();
     arena.print();
-    arena.up();
-    arena.right();
-    arena.left();
-    if(arena.down()){
-        cout << "yay" << endl;
-        arena.print();
-    }
+    cout << arena.getheur() << endl;
 }

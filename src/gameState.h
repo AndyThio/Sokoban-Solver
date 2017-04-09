@@ -19,6 +19,7 @@ class gameState{
         bool isSolved();
         std::vector<std::vector<int> > getArena();
         void print();
+        int getheur();
     private:
         bool updateArena(std::pair<int,int> move);
         void updateplayer();
