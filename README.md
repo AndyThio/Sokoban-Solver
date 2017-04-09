@@ -2,6 +2,12 @@
 
 A Sokoban Solver, written in serial then converted to parallel using std::threads.
 
+## How to Run
+1) Download the src
+2) cd into the src
+3) Run the command `make run`
+4) Enter file path into the text prompt
+
 ## Input File Requirements
 
 - All integers

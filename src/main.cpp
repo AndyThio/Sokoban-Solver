@@ -1,9 +1,11 @@
 #include <iostream>
 #include <fstream>
-#include <pthreads.h>
+#include <pthread.h>
 #include <vector>
 #include <string>
 using namespace std;
+
+#include "gameState.h"
 
 /*
  * Types of Spaces:
@@ -20,10 +22,12 @@ const int hole = 2;
 const int f_hole = 3;
 const int wall = 4;
 const int player = 5;
+const int playerhole = 6;
 
-vector<vector<int> > formArena(){
+gameState formArena(){
     vector<vector<int> > arena;
     int player_exist = -1;
+    pair<int,int> player;
 
     string fname;
     cout << "Enter text file name: ";
@@ -41,6 +45,10 @@ vector<vector<int> > formArena(){
      */
 
     fstream fin(fname, fstream::in);
+    if(!fin.is_open()){
+        cerr << "Invalid Text File" << endl;
+        exit(1);
+    }
     int height, width,spot;
     fin >> height >> width;
     arena.resize(height);
@@ -48,21 +56,32 @@ vector<vector<int> > formArena(){
     for (int i = 0; i < height ; ++i){
         for (int j = 0; j < width; ++j){
             fin >> spot;
-            if(spot == 5){
+            if(spot == 5 || spot == 6){
                 ++player_exist;
+                player = make_pair(i,j);
+                cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
             }
             arena.at(i).push_back(spot);
         }
     }
-    if(player_exist){
-        return arena;
+    if(!player_exist){
+        return gameState(arena,player);
     }
     else{
-        cerr << "Player doesn't exist or more than one player"
-        return NULL;
+        cerr << "Player doesn't exist or more than one player";
+        return gameState();
     }
 }
 
 int main(){
-    vector<vector<int> > arena;
+    gameState arena;
+    arena = formArena();
+    arena.print();
+    arena.up();
+    arena.right();
+    arena.left();
+    if(arena.down()){
+        cout << "yay" << endl;
+        arena.print();
+    }
 }

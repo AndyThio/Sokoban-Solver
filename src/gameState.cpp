@@ -2,7 +2,11 @@
 
 #include "gameState.h"
 
-gameState::gameState(vector<vector<int> > field, pair<int,int> p)
+
+gameState::gameState()
+{}
+
+gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p)
     :arena(field),position(p)
 {}
 
@@ -15,18 +19,18 @@ void gameState::updateplayer(){
     }
 }
 
-void gameState::updatespot(pair<int,int> spot, int new_space){
+void gameState::updatespot(std::pair<int,int> spot, int new_space){
     arena.at(spot.first).at(spot.second) = new_space;
 }
 
-bool gameState::updateArena(pair<int,int> move){
+bool gameState::updateArena(std::pair<int,int> move){
     int arenaSizeX = arena.size();
     int arenaSizeY = arena.at(0).size();
     int ahead, dir, temp;
-    pair<int,int> second_move;
+    std::pair<int,int> second_move;
 
     if(arenaSizeX <= position.first || arenaSizeX <= move.first || arenaSizeY <= position.second
-            || arenaSizeY <= move.second || 0 > position.first || 0 > position.second ||
+            || arenaSizeY <= move.second || 0 > position.first || 0 > position.second
             || 0 > move.first || 0 > move.second){
         return false;
     }
@@ -45,16 +49,16 @@ bool gameState::updateArena(pair<int,int> move){
                     return false;
                 }
                 ahead = arena.at(move.first).at(temp);
-                second_move = make_pair(move.first,temp);
+                second_move = std::make_pair(move.first,temp);
             }
             else{
                 dir = move.first-position.first;
-                temp = move.first-dir;
+                temp = move.first+dir;
                 if(temp < 0 || temp >= arenaSizeX){
                     return false;
                 }
                 ahead = arena.at(temp).at(move.second);
-                second_move = make_pair(temp,move.second);
+                second_move = std::make_pair(temp,move.second);
             }
 
 
@@ -77,10 +81,10 @@ bool gameState::updateArena(pair<int,int> move){
                     break;
                 case 4: return false;
                     break;
-                case 5: cerr << "Cannot have more than one player" << endl;
+                case 5: std::cerr << "Cannot have more than one player" << std::endl;
                         return false;
                     break;
-                case default: cerr << "Invalid Space Type" << endl;
+                default: std::cerr << "Invalid Space Type" << std::endl;
                         return false;
                     break;
             }
@@ -98,16 +102,16 @@ bool gameState::updateArena(pair<int,int> move){
                     return false;
                 }
                 ahead = arena.at(move.first).at(temp);
-                second_move = make_pair(move.first,temp);
+                second_move = std::make_pair(move.first,temp);
             }
             else{
                 dir = move.first-position.first;
-                temp = move.first-dir;
+                temp = move.first+dir;
                 if(temp < 0 || temp >= arenaSizeX){
                     return false;
                 }
                 ahead = arena.at(temp).at(move.second);
-                second_move = make_pair(temp,move.second);
+                second_move = std::make_pair(temp,move.second);
             }
 
 
@@ -131,20 +135,20 @@ bool gameState::updateArena(pair<int,int> move){
                     break;
                 case 4: return false;
                     break;
-                case 5: cerr << "Cannot have more than one player" << endl;
+                case 5: std::cerr << "Cannot have more than one player" << std::endl;
                         return false;
                     break;
-                case default: cerr << "Invalid Space Type" << endl;
+                default: std::cerr << "Invalid Space Type" << std::endl;
                         return false;
                     break;
             }
             break;
         case 4: return false;
             break;
-        case 5: cerr << "Cannot have more than one player" << endl;
+        case 5: std::cerr << "Cannot have more than one player" << std::endl;
                 return false;
             break;
-        case default: cerr << "Invalid Space Type" << endl;
+        default: std::cerr << "Invalid Space Type" << std::endl;
                 return false;
             break;
     }
@@ -153,22 +157,22 @@ bool gameState::updateArena(pair<int,int> move){
 
 bool gameState::down(){
     int update = position.first+1;
-    return updateArena(make_pair(update, position.second);
+    return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::up(){
     int update = position.first-1;
-    return updateArena(make_pair(update, position.second);
+    return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::right(){
     int update = position.second+1;
-    return updateArena(make_pair(position.first, update);
+    return updateArena(std::make_pair(position.first, update));
 }
 
 bool gameState::left(){
     int update = position.second-1;
-    return udpateArena(make_pair(position.first, update);
+    return updateArena(std::make_pair(position.first, update));
 }
 
 bool gameState::isSolved(){
@@ -188,6 +192,15 @@ bool gameState::isSolved(){
     return true;
 }
 
-std::vector<vector<int> > gameState::getArena(){
+std::vector<std::vector<int> > gameState::getArena(){
     return arena;
+}
+
+void gameState::print(){
+    for(int i = 0; i < arena.size(); ++i){
+        for(int j = 0; j < arena.at(i).size(); ++j){
+            std::cout << arena.at(i).at(j);
+        }
+        std::cout << std::endl;
+    }
 }
