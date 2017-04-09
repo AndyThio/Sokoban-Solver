@@ -24,6 +24,22 @@ const int wall = 4;
 const int player = 5;
 const int playerhole = 6;
 
+const int right = 7;
+const int left = 8;
+const int down = 9;
+const int up = 10;
+
+struct queueNode{
+    queueNode *parent;
+    gameState arena;
+    int dept;
+    int cost;
+
+    queueNode(queueNode &n, gameState g, int d, int c)
+        :parent(n), arena(g), dept(d),cost(c)
+    {}
+};
+
 gameState formArena(){
     vector<vector<int> > arena;
     int player_exist = -1;
@@ -73,9 +89,80 @@ gameState formArena(){
     }
 }
 
+//TODO: need to generate the vector int
+vector<int> findSolution(gameState s){
+    vector<queueNode> history;
+    priority_queue<queueNode> pq([](const queueNode& rhs, const queueNode& lhs)
+        {return rhs.cost > lhs.cost} , vector<queueNode>);
+    pq.push(queueNode(nullptr, s, 0, s.getheur()));
+    bool isfinished = false;
+
+    while(!isfinished){
+        auto temp = pq.pop();
+
+        history.push_back(temp);
+
+        gameState tempr = temp.arena;
+        gameState templ = tempr;
+        gameState tempu = tempr;
+        gameState tempd = tempr;
+
+        if(tempr.right()){
+            if(!isfinished){
+                isfinished = tempr.isSolved()
+            }
+            pq.push(queueNode(&temp,tempr,temp.dept+1,tempr.getheur()));
+        }
+        if(templ.left()){
+            if(!isfinished){
+                isfinished = templ.isSolved()
+            }
+            pq.push(queueNode(&temp,templ,temp.dept+1,templ.getheur()));
+        }
+        if(tempd.down()){
+            if(!isfinished){
+                isfinished = tempd.isSolved()
+            }
+            pq.push(queueNode(&temp,tempd,temp.dept+1,tempd.getheur()));
+        }
+        if(tempu.up()){
+            if(!isfinished){
+                isfinished = tempu.isSolved()
+            }
+            pq.push(queueNode(&temp,tempu,temp.dept+1,tempu.getheur()));
+        }
+    }
+    //TODO: generate some kind of backtrace
+}
+
+
+
+void printBt(vector<int> bt){
+    ofstream rfil;
+    rfil.open("results.txt");
+    for(auto &e: bt){
+        switch(e){
+            case right: rfil << "Right" << endl;
+                break;
+            case left: rfil << "Left" << endl;
+                break;
+            case up: rfil << "Up" << endl;
+                break;
+            case down: rfil << "Down" << endl;
+                break;
+            default: cerr << "Invalid move: " + e << endl;
+                return;
+                break;
+        }
+    }
+    rfil.close();
+}
+
+
 int main(){
     gameState arena;
     arena = formArena();
+
     arena.print();
     cout << arena.getheur() << endl;
 }
