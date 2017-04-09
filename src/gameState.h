@@ -9,11 +9,8 @@ class gameState{
         std::vector<vector<int > > arena;
         //Position of the player
         std::pair<int,int> position;
-        //Refers to number of Barrels/Targets
-        int barrels;
-        int targets;
     public:
-        gameState(vector<vector<int> > a,pair<int,int> p, int b, int t);
+        gameState(vector<vector<int> > a,pair<int,int> p);
         bool down();
         bool up();
         bool right();
@@ -21,8 +18,9 @@ class gameState{
         bool isSolved();
         std::vector<vector<int> > getArena();
     private:
-        bool isValid( pair<int,int> move);
-        vector<vector<int> > updateArena(pair<int,int> move);
+        bool updateArena(pair<int,int> move);
+        void updateplayer();
+        void updatespot(pair<int,int> move, int new_space);
 };
 
 #endif
