@@ -2,6 +2,7 @@
 #include <fstream>
 #include <pthread.h>
 #include <vector>
+#include <queue>
 #include <string>
 using namespace std;
 
@@ -24,20 +25,20 @@ const int wall = 4;
 const int player = 5;
 const int playerhole = 6;
 
-const int right = 7;
-const int left = 8;
+const int rht = 7;
+const int lft = 8;
 const int down = 9;
 const int up = 10;
 
 struct queueNode{
-    queueNode *parent;
+    gameState parent;
     gameState arena;
     int dept;
     int cost;
 
     queueNode(){}
-    queueNode(queueNode &n, gameState g, int d, int c)
-        :parent(n), arena(g), dept(d),cost(c)
+    queueNode(gameState l, gameState g, int d, int c)
+        :parent(l),arena(g), dept(d),cost(c)
     {}
 };
 
@@ -90,68 +91,55 @@ gameState formArena(){
     }
 }
 
-vector<int> createbacktrace(const vector<queueNode>& history, gameState s,const queueNode &temp){
-    vector<int> trace;
-    trace.push_back(s.getlastmove());
-    trace.push_back((*temp).arena.getlastmove());
-    auto temp2=(*temp).parent;
-    while(temp2->arena.getlastmove()!=0){
-        trace.push_back(temp2->arena.getlastmove());
-        temp2 = temp2->parent;
-    }
-    return trace;
-
-
-
-}
 
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
-    vector<queueNode> history;
-    priority_queue<queueNode> pq([](const queueNode& rhs, const queueNode& lhs)
-        {return rhs.cost > lhs.cost} , vector<queueNode>);
-    pq.push(queueNode(nullptr, s, 0, s.getheur()));
+    auto mycmp = [](const queueNode& rhs, const queueNode& lhs)
+        {return rhs.cost > lhs.cost;};
+    priority_queue<queueNode , vector<queueNode> ,decltype(mycmp)> pq(mycmp);
+    pq.push(queueNode(s,s, 0, s.getheur()));
     bool isfinished = false;
     gameState finishedState;
 
     while(!isfinished){
+        auto temp = pq.top();
+        pq.pop();
 
-        history.push_back(pq.pop());
-
-        auto temp = &(history.at(history.size()-1));
-
-        gameState tempr = (*temp).arena;
+        gameState tempr = temp.arena;
         gameState templ = tempr;
         gameState tempu = tempr;
         gameState tempd = tempr;
 
-        if(tempr.right()){
+        //cout << "Moving right" << endl;
+        if(tempr.right() && !tempr.isequal(temp.parent)){
             if(tempr.isSolved()){
-                return createbacktrace(history,tempr, temp);
+                return tempr.getlastmove();
             }
-            pq.push(queueNode(temp,tempr,temp.dept+1,tempr.getheur()));
+            pq.push(queueNode(temp.arena,tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
-        if(templ.left()){
+        //cout << "Moving left" << endl;
+        if(templ.left() && !templ.isequal(temp.parent)){
             if(templ.isSolved()){
-                return createbacktrace(history,templ, temp);
+                return templ.getlastmove();
             }
-            pq.push(queueNode(temp,templ,temp.dept+1,templ.getheur()));
+            pq.push(queueNode(temp.arena,templ,temp.dept+1,temp.dept+1+templ.getheur()));
         }
-        if(tempd.down()){
+        //cout << "Moving down" << endl;
+        if(tempd.down() && !tempd.isequal(temp.parent)){
             if(tempd.isSolved()){
-                return createbacktrace(history,tempd, temp);
+                return tempd.getlastmove();
             }
-            pq.push(queueNode(temp,tempd,temp.dept+1,tempd.getheur()));
+            pq.push(queueNode(temp.arena,tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
-        if(tempu.up()){
+        //cout << "Moving up" << endl;
+        if(tempu.up() && !tempu.isequal(temp.parent)){
             if(tempu.isSolved()){
-                return createbacktrace(history,tempu, temp);
+                return tempu.getlastmove();
             }
-            pq.push(queueNode(temp,tempu,temp.dept+1,tempu.getheur()));
+            pq.push(queueNode(temp.arena,tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
     }
     //TODO: generate some kind of backtrace
-    return createbacktrace(history,finishedState,
 
 
 }
@@ -163,9 +151,9 @@ void printBt(vector<int> bt){
     rfil.open("../bin/results.txt");
     for(auto &e: bt){
         switch(e){
-            case right: rfil << "Right" << endl;
+            case rht: rfil << "Right" << endl;
                 break;
-            case left: rfil << "Left" << endl;
+            case lft: rfil << "Left" << endl;
                 break;
             case up: rfil << "Up" << endl;
                 break;
@@ -183,7 +171,6 @@ void printBt(vector<int> bt){
 int main(){
     gameState arena;
     arena = formArena();
-
-    arena.print();
-    cout << arena.getheur() << endl;
+    auto result = findSolution(arena);
+    printBt(result);
 }

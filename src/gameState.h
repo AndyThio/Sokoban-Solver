@@ -9,10 +9,11 @@ class gameState{
         std::vector<std::vector<int > > arena;
         //Position of the player
         std::pair<int,int> position;
-        int lastmove;
+        std::vector<int> lastmove;
     public:
         gameState();
         gameState(std::vector<std::vector<int> > a,std::pair<int,int> p);
+        gameState(std::vector<std::vector<int> > a,std::pair<int,int> p, std::vector<int> l);
         bool down();
         bool up();
         bool right();
@@ -21,8 +22,8 @@ class gameState{
         std::vector<std::vector<int> > getArena();
         void print();
         int getheur();
-        int getlastmove();
-        void setlm(int lm);
+        std::vector<int> getlastmove();
+        bool isequal(gameState s);
     private:
         bool updateArena(std::pair<int,int> move);
         void updateplayer();

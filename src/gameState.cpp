@@ -8,10 +8,10 @@ gameState::gameState()
 {}
 
 gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p)
-    :arena(field),position(p),lastmove(0)
+    :arena(field),position(p)
 {}
 
-gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, int l)
+gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, std::vector<int> l)
     :arena(field),position(p),lastmove(l)
 {}
 
@@ -25,10 +25,15 @@ void gameState::updateplayer(){
 }
 
 void gameState::updatespot(std::pair<int,int> spot, int new_space){
+    if(new_space == 5){
+        position = spot;
+    }
     arena.at(spot.first).at(spot.second) = new_space;
 }
 
 bool gameState::updateArena(std::pair<int,int> move){
+    //print();
+    //std::cout << position.first << ", " << position.second << std::endl;
     int arenaSizeX = arena.size();
     int arenaSizeY = arena.at(0).size();
     int ahead, dir, temp;
@@ -86,7 +91,7 @@ bool gameState::updateArena(std::pair<int,int> move){
                     break;
                 case 4: return false;
                     break;
-                case 5: std::cerr << "Cannot have more than one player" << std::endl;
+                case 5: std::cerr << "Cannot have more than one player\nahead: "+ ahead << std::endl;
                         return false;
                     break;
                 default: std::cerr << "Invalid Space Type" << std::endl;
@@ -140,7 +145,7 @@ bool gameState::updateArena(std::pair<int,int> move){
                     break;
                 case 4: return false;
                     break;
-                case 5: std::cerr << "Cannot have more than one player" << std::endl;
+                case 5: std::cerr << "Cannot have more than one player\nahead: "+ahead << std::endl;
                         return false;
                     break;
                 default: std::cerr << "Invalid Space Type" << std::endl;
@@ -162,25 +167,25 @@ bool gameState::updateArena(std::pair<int,int> move){
 
 bool gameState::down(){
     int update = position.first+1;
-    lastmove = 10;
+    lastmove.push_back(9);
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::up(){
     int update = position.first-1;
-    lastmove = 9;
+    lastmove.push_back(10);
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::right(){
     int update = position.second+1;
-    lastmove = 7;
+    lastmove.push_back(7);
     return updateArena(std::make_pair(position.first, update));
 }
 
 bool gameState::left(){
     int update = position.second-1;
-    lastmove = 8;
+    lastmove.push_back(8);
     return updateArena(std::make_pair(position.first, update));
 }
 
@@ -216,6 +221,7 @@ void gameState::print(){
 }
 
 int gameState::getheur(){
+    //std::cout << "start" << std::endl;
     std::vector<std::pair<int,int> > barrels;
     std::vector<std::pair<int,int> > targets;
     int h = 0;
@@ -227,13 +233,17 @@ int gameState::getheur(){
                     break;
                 case 2: targets.push_back(std::make_pair(i,j));
                     break;
+                case 6: targets.push_back(std::make_pair(i,j));
+                    break;
                 default: break;
             }
         }
     }
 
+    //std::cout << "inmid" << std::endl;
     std::pair<int,int> curr = position;
     while(!barrels.empty() || !targets.empty()){
+        //std::cout << "First for" << std::endl;
         int min = std::numeric_limits<int>::max();
         auto iter = barrels.begin();
         for(auto e = barrels.begin(); e != barrels.end();++e){
@@ -247,6 +257,7 @@ int gameState::getheur(){
         barrels.erase(iter);
         h+= min;
 
+        //std::cout << "second for" << std::endl;
         min = std::numeric_limits<int>::max();
         iter = targets.begin();
         for(auto e = targets.begin(); e != targets.end();++e){
@@ -260,13 +271,21 @@ int gameState::getheur(){
         targets.erase(iter);
         h+= min;
     }
+    //std::cout << "end" << std::endl << std::endl;
     return h;
 }
 
-int gameState::getlastmove(){
+std::vector<int> gameState::getlastmove(){
     return lastmove;
 }
 
-void gameState::setlm(int lm){
-    lastmove = lm;
+bool gameState::isequal(gameState m){
+    for(int i = 0; arena.size(); ++i){
+        for(int j = 0; arena.size(); ++j){
+            if(arena.at(i).at(j) == m.arena.at(i).at(j)){
+                return false;
+                }
+        }
+    }
+    return true;
 }
