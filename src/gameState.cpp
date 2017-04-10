@@ -8,7 +8,11 @@ gameState::gameState()
 {}
 
 gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p)
-    :arena(field),position(p)
+    :arena(field),position(p),lastmove(0)
+{}
+
+gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, int l)
+    :arena(field),position(p),lastmove(l)
 {}
 
 void gameState::updateplayer(){
@@ -158,21 +162,25 @@ bool gameState::updateArena(std::pair<int,int> move){
 
 bool gameState::down(){
     int update = position.first+1;
+    lastmove = 10;
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::up(){
     int update = position.first-1;
+    lastmove = 9;
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::right(){
     int update = position.second+1;
+    lastmove = 7;
     return updateArena(std::make_pair(position.first, update));
 }
 
 bool gameState::left(){
     int update = position.second-1;
+    lastmove = 8;
     return updateArena(std::make_pair(position.first, update));
 }
 
@@ -253,4 +261,12 @@ int gameState::getheur(){
         h+= min;
     }
     return h;
+}
+
+int gameState::getlastmove(){
+    return lastmove;
+}
+
+void gameState::setlm(int lm){
+    lastmove = lm;
 }

@@ -35,6 +35,7 @@ struct queueNode{
     int dept;
     int cost;
 
+    queueNode(){}
     queueNode(queueNode &n, gameState g, int d, int c)
         :parent(n), arena(g), dept(d),cost(c)
     {}
@@ -89,6 +90,21 @@ gameState formArena(){
     }
 }
 
+vector<int> createbacktrace(const vector<queueNode>& history, gameState s,const queueNode &temp){
+    vector<int> trace;
+    trace.push_back(s.getlastmove());
+    trace.push_back((*temp).arena.getlastmove());
+    auto temp2=(*temp).parent;
+    while(temp2->arena.getlastmove()!=0){
+        trace.push_back(temp2->arena.getlastmove());
+        temp2 = temp2->parent;
+    }
+    return trace;
+
+
+
+}
+
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
     vector<queueNode> history;
@@ -96,50 +112,55 @@ vector<int> findSolution(gameState s){
         {return rhs.cost > lhs.cost} , vector<queueNode>);
     pq.push(queueNode(nullptr, s, 0, s.getheur()));
     bool isfinished = false;
+    gameState finishedState;
 
     while(!isfinished){
-        auto temp = pq.pop();
 
-        history.push_back(temp);
+        history.push_back(pq.pop());
 
-        gameState tempr = temp.arena;
+        auto temp = &(history.at(history.size()-1));
+
+        gameState tempr = (*temp).arena;
         gameState templ = tempr;
         gameState tempu = tempr;
         gameState tempd = tempr;
 
         if(tempr.right()){
-            if(!isfinished){
-                isfinished = tempr.isSolved()
+            if(tempr.isSolved()){
+                return createbacktrace(history,tempr, temp);
             }
-            pq.push(queueNode(&temp,tempr,temp.dept+1,tempr.getheur()));
+            pq.push(queueNode(temp,tempr,temp.dept+1,tempr.getheur()));
         }
         if(templ.left()){
-            if(!isfinished){
-                isfinished = templ.isSolved()
+            if(templ.isSolved()){
+                return createbacktrace(history,templ, temp);
             }
-            pq.push(queueNode(&temp,templ,temp.dept+1,templ.getheur()));
+            pq.push(queueNode(temp,templ,temp.dept+1,templ.getheur()));
         }
         if(tempd.down()){
-            if(!isfinished){
-                isfinished = tempd.isSolved()
+            if(tempd.isSolved()){
+                return createbacktrace(history,tempd, temp);
             }
-            pq.push(queueNode(&temp,tempd,temp.dept+1,tempd.getheur()));
+            pq.push(queueNode(temp,tempd,temp.dept+1,tempd.getheur()));
         }
         if(tempu.up()){
-            if(!isfinished){
-                isfinished = tempu.isSolved()
+            if(tempu.isSolved()){
+                return createbacktrace(history,tempu, temp);
             }
-            pq.push(queueNode(&temp,tempu,temp.dept+1,tempu.getheur()));
+            pq.push(queueNode(temp,tempu,temp.dept+1,tempu.getheur()));
         }
     }
     //TODO: generate some kind of backtrace
+    return createbacktrace(history,finishedState,
+
+
 }
 
 
 
 void printBt(vector<int> bt){
     ofstream rfil;
-    rfil.open("results.txt");
+    rfil.open("../bin/results.txt");
     for(auto &e: bt){
         switch(e){
             case right: rfil << "Right" << endl;

@@ -9,6 +9,7 @@ class gameState{
         std::vector<std::vector<int > > arena;
         //Position of the player
         std::pair<int,int> position;
+        int lastmove;
     public:
         gameState();
         gameState(std::vector<std::vector<int> > a,std::pair<int,int> p);
@@ -20,6 +21,8 @@ class gameState{
         std::vector<std::vector<int> > getArena();
         void print();
         int getheur();
+        int getlastmove();
+        void setlm(int lm);
     private:
         bool updateArena(std::pair<int,int> move);
         void updateplayer();
