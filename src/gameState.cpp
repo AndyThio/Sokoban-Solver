@@ -25,7 +25,7 @@ void gameState::updateplayer(){
 }
 
 void gameState::updatespot(std::pair<int,int> spot, int new_space){
-    if(new_space == 5){
+    if(new_space == 5 || new_space == 6){
         position = spot;
     }
     arena.at(spot.first).at(spot.second) = new_space;
@@ -94,7 +94,7 @@ bool gameState::updateArena(std::pair<int,int> move){
                 case 5: std::cerr << "Cannot have more than one player\nahead: "+ ahead << std::endl;
                         return false;
                     break;
-                default: std::cerr << "Invalid Space Type" << std::endl;
+                default: std::cerr << "Invalid Space Type: "<< ahead << std::endl;
                         return false;
                     break;
             }

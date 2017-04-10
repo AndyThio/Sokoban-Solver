@@ -110,30 +110,34 @@ vector<int> findSolution(gameState s){
         gameState tempu = tempr;
         gameState tempd = tempr;
 
+        cout << "current depth" << temp.dept << endl;
+        temp.arena.print();
+        cout << endl;
+
         //cout << "Moving right" << endl;
-        if(tempr.right() && !tempr.isequal(temp.parent)){
-            if(tempr.isSolved()){
+        if(tempr.right()){
+            if(tempr.isSolved() && !tempr.isequal(temp.parent)){
                 return tempr.getlastmove();
             }
             pq.push(queueNode(temp.arena,tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
         //cout << "Moving left" << endl;
-        if(templ.left() && !templ.isequal(temp.parent)){
-            if(templ.isSolved()){
+        if(templ.left()){
+            if(templ.isSolved() && !tempr.isequal(temp.parent)){
                 return templ.getlastmove();
             }
             pq.push(queueNode(temp.arena,templ,temp.dept+1,temp.dept+1+templ.getheur()));
         }
         //cout << "Moving down" << endl;
-        if(tempd.down() && !tempd.isequal(temp.parent)){
-            if(tempd.isSolved()){
+        if(tempd.down()){
+            if(tempd.isSolved() && !tempr.isequal(temp.parent)){
                 return tempd.getlastmove();
             }
             pq.push(queueNode(temp.arena,tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
         //cout << "Moving up" << endl;
-        if(tempu.up() && !tempu.isequal(temp.parent)){
-            if(tempu.isSolved()){
+        if(tempu.up()){
+            if(tempu.isSolved() && !tempr.isequal(temp.parent)){
                 return tempu.getlastmove();
             }
             pq.push(queueNode(temp.arena,tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
