@@ -31,14 +31,13 @@ const int down = 9;
 const int up = 10;
 
 struct queueNode{
-    gameState parent;
     gameState arena;
     int dept;
     int cost;
 
     queueNode(){}
-    queueNode(gameState l, gameState g, int d, int c)
-        :parent(l),arena(g), dept(d),cost(c)
+    queueNode(gameState g, int d, int c)
+        :arena(g), dept(d),cost(c)
     {}
 };
 
@@ -91,57 +90,79 @@ gameState formArena(){
     }
 }
 
+bool isrepeat(vector<gameState> &h, gameState c){
+    for(auto &e: h){
+        if(e.isequal(c)){
+            return true;
+        }
+    }
+    return false;
+}
+
 
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
     auto mycmp = [](const queueNode& rhs, const queueNode& lhs)
         {return rhs.cost > lhs.cost;};
     priority_queue<queueNode , vector<queueNode> ,decltype(mycmp)> pq(mycmp);
-    pq.push(queueNode(s,s, 0, s.getheur()));
+    pq.push(queueNode(s, 0, s.getheur()));
     bool isfinished = false;
     gameState finishedState;
+    vector<gameState> alreadyseen;
+    queueNode temp = pq.top();
 
     while(!isfinished){
-        auto temp = pq.top();
+        //cout << "iter start" << endl;
+        //cout << "size of already: " << alreadyseen.size()<< endl;
+
+        //cout << pq.size() << endl;
+        temp = pq.top();
+        //cout << "not top" << endl;
         pq.pop();
 
+        //cout << "allocating stuff" << endl;
         gameState tempr = temp.arena;
         gameState templ = tempr;
         gameState tempu = tempr;
         gameState tempd = tempr;
 
-        cout << "current depth" << temp.dept << endl;
-        temp.arena.print();
-        cout << endl;
+        //cout << "current depth" << temp.dept << endl;
+        //temp.arena.print();
+        //cout << endl;
 
         //cout << "Moving right" << endl;
-        if(tempr.right()){
-            if(tempr.isSolved() && !tempr.isequal(temp.parent)){
+        if(tempr.right() && !isrepeat(alreadyseen, tempr)){
+            if(tempr.isSolved()){
                 return tempr.getlastmove();
             }
-            pq.push(queueNode(temp.arena,tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
+            alreadyseen.push_back(tempr);
+            pq.push(queueNode(tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
         //cout << "Moving left" << endl;
-        if(templ.left()){
-            if(templ.isSolved() && !tempr.isequal(temp.parent)){
+        if(templ.left() && !isrepeat(alreadyseen, templ)){
+            if(templ.isSolved()){
                 return templ.getlastmove();
             }
-            pq.push(queueNode(temp.arena,templ,temp.dept+1,temp.dept+1+templ.getheur()));
+            alreadyseen.push_back(templ);
+            pq.push(queueNode(templ,temp.dept+1,temp.dept+1+templ.getheur()));
         }
         //cout << "Moving down" << endl;
-        if(tempd.down()){
-            if(tempd.isSolved() && !tempr.isequal(temp.parent)){
+        if(tempd.down() && !isrepeat(alreadyseen, tempd)){
+            if(tempd.isSolved()){
                 return tempd.getlastmove();
             }
-            pq.push(queueNode(temp.arena,tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
+            alreadyseen.push_back(tempd);
+            pq.push(queueNode(tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
         //cout << "Moving up" << endl;
-        if(tempu.up()){
-            if(tempu.isSolved() && !tempr.isequal(temp.parent)){
+        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
+            if(tempu.isSolved()){
                 return tempu.getlastmove();
             }
-            pq.push(queueNode(temp.arena,tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
+            alreadyseen.push_back(tempu);
+            pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
+        //cout << "next iter" << endl;
     }
     //TODO: generate some kind of backtrace
 
@@ -176,5 +197,6 @@ int main(){
     gameState arena;
     arena = formArena();
     auto result = findSolution(arena);
+    cout << "priting results" << endl;
     printBt(result);
 }

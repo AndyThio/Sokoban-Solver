@@ -279,12 +279,12 @@ std::vector<int> gameState::getlastmove(){
     return lastmove;
 }
 
-bool gameState::isequal(gameState m){
-    for(int i = 0; arena.size(); ++i){
-        for(int j = 0; arena.size(); ++j){
-            if(arena.at(i).at(j) == m.arena.at(i).at(j)){
+bool gameState::isequal(const gameState m){
+    for(int i = 0; i < arena.size(); ++i){
+        for(int j = 0;j< arena.at(i).size(); ++j){
+            if(arena.at(i).at(j) != m.arena.at(i).at(j)){
                 return false;
-                }
+            }
         }
     }
     return true;

@@ -23,7 +23,7 @@ class gameState{
         void print();
         int getheur();
         std::vector<int> getlastmove();
-        bool isequal(gameState s);
+        bool isequal(const gameState s);
     private:
         bool updateArena(std::pair<int,int> move);
         void updateplayer();
