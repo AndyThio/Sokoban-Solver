@@ -1,10 +1,13 @@
+ionic.txt           115
 justpush .txt       1
 justpushhard.txt    2
-right.txt           1
-up.txt              1
+malicious1.txt      60
+malicious2.txt      56
+malicious6.txt      72
 microban.txt        33
 microban2.txt       16
 microban3.txt       41
 microban4.txt       23
 microban5.txt       25
-ionic.txt           115
+right.txt           1
+up.txt              1
