@@ -89,7 +89,6 @@ gameState formArena(){
         return gameState();
     }
 }
-
 bool isrepeat(vector<gameState> &h, gameState c){
     for(auto &e: h){
         if(e.isequal(c)){
@@ -108,6 +107,7 @@ vector<int> findSolution(gameState s){
     pq.push(queueNode(s, 0, s.getheur()));
     bool isfinished = false;
     gameState finishedState;
+    //could be just tracking barrels + positi
     vector<gameState> alreadyseen;
     queueNode temp = pq.top();
 

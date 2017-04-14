@@ -7,13 +7,107 @@
 gameState::gameState()
 {}
 
-gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p)
-    :arena(field),position(p)
-{}
+gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, int w)
+{
+    for(int i = 0; i < field.size(); ++i){
+        for(int j = 0; j < field.at(i).size(); ++j){
+            switch(field.at(i).at(j)){
+                case 0:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 1:
+                    barrels.push_back(true);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 2:
+                    barrels.push_back(false);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                case 3:
+                    barrels.push_back(true);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                case 4:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(true);
+                    break;
+                case 5:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 6:
+                    barrels.push_back(false);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                default:
+                    cerr << "No matching symbol" << endl;
+                    exit(0);
+            }
+        }
+    }
+    position = p;
+    width = w;
+}
 
+
+/*
 gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, std::vector<int> l)
-    :arena(field),position(p),lastmove(l)
-{}
+{
+    for(int i = 0; i < field.size(); ++i){
+        for(int j = 0; j < field.at(i).size(); ++j){
+            switch(field.at(i).at(j)){
+                case 0:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 1:
+                    barrels.push_back(true);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 2:
+                    barrels.push_back(false);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                case 3:
+                    barrels.push_back(true);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                case 4:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(true);
+                    break;
+                case 5:
+                    barrels.push_back(false);
+                    targets.push_back(false);
+                    walls.push_back(false);
+                    break;
+                case 6:
+                    barrels.push_back(false);
+                    targets.push_back(true);
+                    walls.push_back(false);
+                    break;
+                default:
+                    cerr << "No matching symbol" << endl;
+                    exit(0);
+            }
+        }
+    }
+    position = p;
+    width = w;
+}
 
 void gameState::updateplayer(){
     if( arena.at(position.first).at(position.second) == 6){
@@ -23,6 +117,7 @@ void gameState::updateplayer(){
         arena.at(position.first).at(position.second) = 0;
     }
 }
+*/
 
 void gameState::updatespot(std::pair<int,int> spot, int new_space){
     if(new_space == 5 || new_space == 6){
@@ -34,134 +129,55 @@ void gameState::updatespot(std::pair<int,int> spot, int new_space){
 bool gameState::updateArena(std::pair<int,int> move){
     //print();
     //std::cout << position.first << ", " << position.second << std::endl;
-    int arenaSizeX = arena.size();
-    int arenaSizeY = arena.at(0).size();
-    int ahead, dir, temp;
-    std::pair<int,int> second_move;
+    int arenaSizeX = width;
+    int arenaSizeY = barrels.size()/width;
+    int dir, temp;
+    int moves = move.first * width + move.second;
+    int move2;
 
     if(arenaSizeX <= position.first || arenaSizeX <= move.first || arenaSizeY <= position.second
             || arenaSizeY <= move.second || 0 > position.first || 0 > position.second
             || 0 > move.first || 0 > move.second){
         return false;
     }
-
-    switch(arena.at(move.first).at(move.second)) {
-        case 0:
-            updateplayer();
-            updatespot(move,5);
-            return true;
-            break;
-        case 1:
-            if(position.first == move.first){
-                dir = move.second - position.second;
-                temp = move.second+dir;
-                if(temp < 0 || temp >= arenaSizeY){
-                    return false;
-                }
-                ahead = arena.at(move.first).at(temp);
-                second_move = std::make_pair(move.first,temp);
-            }
-            else{
-                dir = move.first-position.first;
-                temp = move.first+dir;
-                if(temp < 0 || temp >= arenaSizeX){
-                    return false;
-                }
-                ahead = arena.at(temp).at(move.second);
-                second_move = std::make_pair(temp,move.second);
-            }
-
-
-            switch(ahead){
-                case 0:
-                    updateplayer();
-                    updatespot(move,5);
-                    updatespot(second_move,1);
-                    return true;
-                    break;
-                case 1: return false;
-                    break;
-                case 2:
-                    updateplayer();
-                    updatespot(move,5);
-                    updatespot(second_move,3);
-                    return true;
-                    break;
-                case 3: return false;
-                    break;
-                case 4: return false;
-                    break;
-                case 5: std::cerr << "Cannot have more than one player\nahead: "+ ahead << std::endl;
-                        return false;
-                    break;
-                default: std::cerr << "Invalid Space Type: "<< ahead << std::endl;
-                        return false;
-                    break;
-            }
-            break;
-        case 2:
-            updateplayer();
-            updatespot(move,6);
-            return true;
-            break;
-        case 3:
-            if(position.first == move.first){
-                dir = move.second - position.second;
-                temp = move.second+dir;
-                if(temp < 0 || temp >= arenaSizeY){
-                    return false;
-                }
-                ahead = arena.at(move.first).at(temp);
-                second_move = std::make_pair(move.first,temp);
-            }
-            else{
-                dir = move.first-position.first;
-                temp = move.first+dir;
-                if(temp < 0 || temp >= arenaSizeX){
-                    return false;
-                }
-                ahead = arena.at(temp).at(move.second);
-                second_move = std::make_pair(temp,move.second);
-            }
-
-
-
-            switch(ahead){
-                case 0:
-                    updateplayer();
-                    updatespot(move, 6);
-                    updatespot(second_move, 1);
-                    return true;
-                    break;
-                case 1: return false;
-                    break;
-                case 2:
-                    updateplayer();
-                    updatespot(move,6);
-                    updatespot(second_move, 3);
-                    return true;
-                    break;
-                case 3: return false;
-                    break;
-                case 4: return false;
-                    break;
-                case 5: std::cerr << "Cannot have more than one player\nahead: "+ahead << std::endl;
-                        return false;
-                    break;
-                default: std::cerr << "Invalid Space Type" << std::endl;
-                        return false;
-                    break;
-            }
-            break;
-        case 4: return false;
-            break;
-        case 5: std::cerr << "Cannot have more than one player" << std::endl;
-                return false;
-            break;
-        default: std::cerr << "Invalid Space Type" << std::endl;
-                return false;
-            break;
+    
+    if(walls.at(moves)){
+        return false;
     }
+    else if(barrels.at(moves)){
+        if(position.first == move.first){
+            dir = move.second - position.second;
+            temp = move.second+dir;
+            if(temp < 0 || temp >= arenaSizeY){
+                return false;
+            }
+            move2 = move.first*width + temp;
+        }
+        else{
+            dir = move.first-position.first;
+            temp = move.first+dir;
+            if(temp < 0 || temp >= arenaSizeX){
+                return false;
+            }
+            move2 = temp * width + move.second;
+        }
+        
+        if(walls.at(move2)
+                || barrels.at(move2){
+            return false;
+        }
+        else{
+            position = move;
+            barrels.at(moves) = false;
+            barrels.at(move2) = true;
+            return true;
+        }
+    }
+    else{
+        position = move;
+        return true;
+    }
+
 
 }
 
@@ -190,21 +206,21 @@ bool gameState::left(){
 }
 
 bool gameState::isSolved(){
-    for(int i = 0; i < arena.size(); ++i){
-        for(int j = 0; j < arena.at(i).size(); ++j){
-            switch(arena.at(i).at(j)){
-                case 0: break;
-                case 1: return false;
-                case 2: return false;
-                case 3: break;
-                case 4: break;
-                case 5: break;
-                case 6: return false;
-                default: break;
+    /*
+    for(int i = 0; i < targets.size(); ++i){
+        for(int j = 0; j < targets.at(i).size(); ++j){
+            if(targets.at(i).at(j)){
+                if(barrels.at(i).at(j)){
+                    return false;
+                }
             }
         }
     }
-    return true;
+    */
+    if(barrels == targets){
+        return true;
+    }
+    return false;
 }
 
 std::vector<std::vector<int> > gameState::getArena(){
@@ -212,41 +228,43 @@ std::vector<std::vector<int> > gameState::getArena(){
 }
 
 void gameState::print(){
-    for(int i = 0; i < arena.size(); ++i){
-        for(int j = 0; j < arena.at(i).size(); ++j){
-            std::cout << arena.at(i).at(j);
-        }
+    for(int i = 0; i < targets.size(); ++i){
+            if(barrels.at(i).at(j) && targets.at(i).at(j)){
+                std::cout << 3;
+            }
+            else if(walls.at(i).at(j)){
+                std::cout << 4;
+            }
+        if(i%width == 0)
         std::cout << std::endl;
     }
 }
 
 int gameState::getheur(){
     //std::cout << "start" << std::endl;
-    std::vector<std::pair<int,int> > barrels;
-    std::vector<std::pair<int,int> > targets;
+    std::vector<std::pair<int,int> > barrel;
+    std::vector<std::pair<int,int> > target;
     int h = 0;
 
-    for(int i = 0; i < arena.size(); ++i){
-        for(int j = 0; j < arena.at(i).size(); ++j){
-            switch(arena.at(i).at(j)){
-                case 1: barrels.push_back(std::make_pair(i,j));
-                    break;
-                case 2: targets.push_back(std::make_pair(i,j));
-                    break;
-                case 6: targets.push_back(std::make_pair(i,j));
-                    break;
-                default: break;
+    for(int j = 0; j < arena.size(); ++j){
+        i = 
+        if(!(barrels.at(i) && targets.at(i))){
+            if(barrels.at(i))){
+                barrel.push_back(make_pair(i,j));
+            }
+            if(targets.at(i).at(j)){
+                target.push_back(make_pair(i,j));
             }
         }
     }
 
     //std::cout << "inmid" << std::endl;
     std::pair<int,int> curr = position;
-    while(!barrels.empty() || !targets.empty()){
+    while(!barrel.empty() || !target.empty()){
         //std::cout << "First for" << std::endl;
         int min = std::numeric_limits<int>::max();
-        auto iter = barrels.begin();
-        for(auto e = barrels.begin(); e != barrels.end();++e){
+        auto iter = barrel.begin();
+        for(auto e = barrel.begin(); e != barrel.end();++e){
             int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
             if( dist < min){
                 min = dist;
@@ -254,13 +272,13 @@ int gameState::getheur(){
                 iter = e;
             }
         }
-        barrels.erase(iter);
+        barrel.erase(iter);
         h+= min;
 
         //std::cout << "second for" << std::endl;
         min = std::numeric_limits<int>::max();
-        iter = targets.begin();
-        for(auto e = targets.begin(); e != targets.end();++e){
+        iter = target.begin();
+        for(auto e = target.begin(); e != target.end();++e){
             int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
             if( dist < min){
                 min = dist;
@@ -268,7 +286,7 @@ int gameState::getheur(){
                 iter = e;
             }
         }
-        targets.erase(iter);
+        target.erase(iter);
         h+= min;
     }
     //std::cout << "end" << std::endl << std::endl;
@@ -280,12 +298,8 @@ std::vector<int> gameState::getlastmove(){
 }
 
 bool gameState::isequal(const gameState m){
-    for(int i = 0; i < arena.size(); ++i){
-        for(int j = 0;j< arena.at(i).size(); ++j){
-            if(arena.at(i).at(j) != m.arena.at(i).at(j)){
-                return false;
-            }
-        }
+    if(barrels != m.barrels){
+        return false;
     }
     return true;
 }
