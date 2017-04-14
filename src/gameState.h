@@ -15,7 +15,7 @@ class gameState{
         std::vector<int> lastmove;
     public:
         gameState();
-        gameState(std::vector<std::vector<int> > a,std::pair<int,int> p);
+        gameState(std::vector<std::vector<int> > a,std::pair<int,int> p, int w);
         //gameState(std::vector<std::vector<int> > a,std::pair<int,int> p, std::vector<int> l);
         bool down();
         bool up();
@@ -31,7 +31,7 @@ class gameState{
     private:
         bool updateArena(std::pair<int,int> move);
         //void updateplayer();
-        void updatespot(std::pair<int,int> move, int new_space);
+        //void updatespot(std::pair<int,int> move, int new_space);
 };
 
 #endif

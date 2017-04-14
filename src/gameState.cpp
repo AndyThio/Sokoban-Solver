@@ -48,7 +48,7 @@ gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p,
                     walls.push_back(false);
                     break;
                 default:
-                    cerr << "No matching symbol" << endl;
+                    std::cerr << "No matching symbol" << std::endl;
                     exit(0);
             }
         }
@@ -117,7 +117,6 @@ void gameState::updateplayer(){
         arena.at(position.first).at(position.second) = 0;
     }
 }
-*/
 
 void gameState::updatespot(std::pair<int,int> spot, int new_space){
     if(new_space == 5 || new_space == 6){
@@ -125,6 +124,7 @@ void gameState::updatespot(std::pair<int,int> spot, int new_space){
     }
     arena.at(spot.first).at(spot.second) = new_space;
 }
+*/
 
 bool gameState::updateArena(std::pair<int,int> move){
     //print();
@@ -140,11 +140,17 @@ bool gameState::updateArena(std::pair<int,int> move){
             || 0 > move.first || 0 > move.second){
         return false;
     }
-    
+    //std::cout << "a  found " << moves << " , "<< barrels.size() << std::endl;
+    barrels.at(moves);
+
+    //std::cout << "going to check the moves" <<  std::endl;
     if(walls.at(moves)){
+        //std::cout << "a wall was hit" << std::endl;
         return false;
     }
+
     else if(barrels.at(moves)){
+        //std::cout << "a Barrel was found" << std::endl;
         if(position.first == move.first){
             dir = move.second - position.second;
             temp = move.second+dir;
@@ -161,9 +167,10 @@ bool gameState::updateArena(std::pair<int,int> move){
             }
             move2 = temp * width + move.second;
         }
-        
+
+        //std::cout << "second move was calculated" << std::endl;
         if(walls.at(move2)
-                || barrels.at(move2){
+                || barrels.at(move2)){
             return false;
         }
         else{
@@ -174,6 +181,7 @@ bool gameState::updateArena(std::pair<int,int> move){
         }
     }
     else{
+        //std::cout << "Spot was empty" << std::endl;
         position = move;
         return true;
     }
@@ -182,24 +190,28 @@ bool gameState::updateArena(std::pair<int,int> move){
 }
 
 bool gameState::down(){
+    //std::cout << "pushing: Down" << std::endl;
     int update = position.first+1;
     lastmove.push_back(9);
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::up(){
+    //std::cout << "pushing: Up" << std::endl;
     int update = position.first-1;
     lastmove.push_back(10);
     return updateArena(std::make_pair(update, position.second));
 }
 
 bool gameState::right(){
+    //std::cout << "pushing: Right" << std::endl;
     int update = position.second+1;
     lastmove.push_back(7);
     return updateArena(std::make_pair(position.first, update));
 }
 
 bool gameState::left(){
+    //std::cout << "pushing: Left" << std::endl;
     int update = position.second-1;
     lastmove.push_back(8);
     return updateArena(std::make_pair(position.first, update));
@@ -222,21 +234,42 @@ bool gameState::isSolved(){
     }
     return false;
 }
-
+/*
 std::vector<std::vector<int> > gameState::getArena(){
     return arena;
 }
+*/
 
 void gameState::print(){
-    for(int i = 0; i < targets.size(); ++i){
-            if(barrels.at(i).at(j) && targets.at(i).at(j)){
-                std::cout << 3;
-            }
-            else if(walls.at(i).at(j)){
-                std::cout << 4;
-            }
-        if(i%width == 0)
-        std::cout << std::endl;
+    int pos = position.first * width + position.second;
+    int i,j;
+    for(int k = 0; k < barrels.size(); ++k){
+        i = k/width;
+        j = k%width;
+        if(barrels.at(k) && targets.at(k)){
+            std::cout << 3;
+        }
+        else if(targets.at(k) && k == pos){
+            std::cout << 6;
+        }
+        else if(barrels.at(k)){
+            std::cout << 1;
+        }
+        else if(targets.at(k)){
+            std::cout << 2;
+        }
+        else if(walls.at(k)){
+            std::cout << 4;
+        }
+        else if (pos == k){
+            std::cout << 5;
+        }
+        else{
+            std::cout << 0;
+        }
+        if(k%width == 0){
+            std::cout << std::endl;
+        }
     }
 }
 
@@ -245,15 +278,17 @@ int gameState::getheur(){
     std::vector<std::pair<int,int> > barrel;
     std::vector<std::pair<int,int> > target;
     int h = 0;
+    int i, j;
 
-    for(int j = 0; j < arena.size(); ++j){
-        i = 
-        if(!(barrels.at(i) && targets.at(i))){
-            if(barrels.at(i))){
-                barrel.push_back(make_pair(i,j));
+    for(int k = 0; k < barrels.size(); ++k){
+        i = k/width;
+        j = k%width;
+        if(!(barrels.at(k) && targets.at(k))){
+            if(barrels.at(k)){
+                barrel.push_back(std::make_pair(i,j));
             }
-            if(targets.at(i).at(j)){
-                target.push_back(make_pair(i,j));
+            if(targets.at(k)){
+                target.push_back(std::make_pair(i,j));
             }
         }
     }
@@ -298,7 +333,7 @@ std::vector<int> gameState::getlastmove(){
 }
 
 bool gameState::isequal(const gameState m){
-    if(barrels != m.barrels){
+    if(barrels != m.barrels || position != m.position){
         return false;
     }
     return true;

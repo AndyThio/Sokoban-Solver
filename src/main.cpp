@@ -82,7 +82,7 @@ gameState formArena(){
         }
     }
     if(!player_exist){
-        return gameState(arena,player);
+        return gameState(arena,player,width);
     }
     else{
         cerr << "Player doesn't exist or more than one player";
@@ -162,7 +162,7 @@ vector<int> findSolution(gameState s){
             alreadyseen.push_back(tempu);
             pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
-        //cout << "next iter" << endl;
+        cout << "next iter" << endl;
     }
     //TODO: generate some kind of backtrace
 
