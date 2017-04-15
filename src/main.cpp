@@ -89,12 +89,44 @@ gameState formArena(){
         return gameState();
     }
 }
+
+void printBt(vector<int> bt){
+    ofstream rfil;
+    rfil.open("../bin/results.txt");
+    for(auto &e: bt){
+        switch(e){
+            case rht: rfil << "Right" << endl;
+                break;
+            case lft: rfil << "Left" << endl;
+                break;
+            case up: rfil << "Up" << endl;
+                break;
+            case down: rfil << "Down" << endl;
+                break;
+            default: cerr << "Invalid move: " + e << endl;
+                return;
+                break;
+        }
+    }
+    rfil.close();
+}
 bool isrepeat(vector<gameState> &h, gameState c){
     for(auto &e: h){
         if(e.isequal(c)){
+            /*
+            cout << "returned true" << endl;
+            e.print();
+            cout << "comaping to: " << endl;
+            c.print();
+            */
             return true;
         }
     }
+            /*
+    cout << "returned false" << endl;
+    cout << "false comaping to: " << endl;
+    c.print();
+            */
     return false;
 }
 
@@ -111,11 +143,11 @@ vector<int> findSolution(gameState s){
     vector<gameState> alreadyseen;
     queueNode temp = pq.top();
 
-    while(!isfinished){
+    while(!pq.empty()){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
+        
 
-        //cout << pq.size() << endl;
         temp = pq.top();
         //cout << "not top" << endl;
         pq.pop();
@@ -162,7 +194,6 @@ vector<int> findSolution(gameState s){
             alreadyseen.push_back(tempu);
             pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
-        cout << "next iter" << endl;
     }
     //TODO: generate some kind of backtrace
 
@@ -171,26 +202,7 @@ vector<int> findSolution(gameState s){
 
 
 
-void printBt(vector<int> bt){
-    ofstream rfil;
-    rfil.open("../bin/results.txt");
-    for(auto &e: bt){
-        switch(e){
-            case rht: rfil << "Right" << endl;
-                break;
-            case lft: rfil << "Left" << endl;
-                break;
-            case up: rfil << "Up" << endl;
-                break;
-            case down: rfil << "Down" << endl;
-                break;
-            default: cerr << "Invalid move: " + e << endl;
-                return;
-                break;
-        }
-    }
-    rfil.close();
-}
+
 
 
 int main(){

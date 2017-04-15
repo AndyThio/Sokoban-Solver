@@ -129,8 +129,8 @@ void gameState::updatespot(std::pair<int,int> spot, int new_space){
 bool gameState::updateArena(std::pair<int,int> move){
     //print();
     //std::cout << position.first << ", " << position.second << std::endl;
-    int arenaSizeX = width;
-    int arenaSizeY = barrels.size()/width;
+    int arenaSizeX = barrels.size()/width;
+    int arenaSizeY = width;
     int dir, temp;
     int moves = move.first * width + move.second;
     int move2;
@@ -267,10 +267,11 @@ void gameState::print(){
         else{
             std::cout << 0;
         }
-        if(k%width == 0){
+        if((k+1)%width == 0){
             std::cout << std::endl;
         }
     }
+    std::cout << std::endl;
 }
 
 int gameState::getheur(){
