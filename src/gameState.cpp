@@ -304,10 +304,10 @@ int gameState::getheur(){
             int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
             if( dist < min){
                 min = dist;
-                curr = *e;
                 iter = e;
             }
         }
+        curr = *iter;
         barrel.erase(iter);
         h+= min;
 
@@ -318,10 +318,10 @@ int gameState::getheur(){
             int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
             if( dist < min){
                 min = dist;
-                curr = *e;
                 iter = e;
             }
         }
+        curr = *iter;
         target.erase(iter);
         h+= min;
     }

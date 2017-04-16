@@ -109,6 +109,26 @@ void printBt(vector<int> bt){
         }
     }
     rfil.close();
+    /*
+    int i = 1;
+    for(auto &e: bt){
+        cout << i << ") ";
+        switch(e){
+            case rht: cout << "Right" << endl;
+                break;
+            case lft: cout << "Left" << endl;
+                break;
+            case up: cout << "Up" << endl;
+                break;
+            case down: cout << "Down" << endl;
+                break;
+            default: cerr << "Invalid move: " + e << endl;
+                return;
+                break;
+        }
+        ++i;
+    }
+    */
 }
 bool isrepeat(vector<gameState> &h, gameState c){
     for(auto &e: h){
@@ -149,6 +169,14 @@ vector<int> findSolution(gameState s){
         
 
         temp = pq.top();
+        /*
+        cout << "Current Depth: " << temp.dept << endl;
+        cout << "Current Heur: " << temp.cost -temp.dept << endl;
+        cout << "backtrace printout" << endl;
+        printBt(temp.arena.getlastmove());
+        cout << "End back Trace" << endl;
+        temp.arena.print();
+        */
         //cout << "not top" << endl;
         pq.pop();
 
