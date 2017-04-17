@@ -57,75 +57,6 @@ gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p,
     width = w;
 }
 
-
-/*
-gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, std::vector<int> l)
-{
-    for(int i = 0; i < field.size(); ++i){
-        for(int j = 0; j < field.at(i).size(); ++j){
-            switch(field.at(i).at(j)){
-                case 0:
-                    barrels.push_back(false);
-                    targets.push_back(false);
-                    walls.push_back(false);
-                    break;
-                case 1:
-                    barrels.push_back(true);
-                    targets.push_back(false);
-                    walls.push_back(false);
-                    break;
-                case 2:
-                    barrels.push_back(false);
-                    targets.push_back(true);
-                    walls.push_back(false);
-                    break;
-                case 3:
-                    barrels.push_back(true);
-                    targets.push_back(true);
-                    walls.push_back(false);
-                    break;
-                case 4:
-                    barrels.push_back(false);
-                    targets.push_back(false);
-                    walls.push_back(true);
-                    break;
-                case 5:
-                    barrels.push_back(false);
-                    targets.push_back(false);
-                    walls.push_back(false);
-                    break;
-                case 6:
-                    barrels.push_back(false);
-                    targets.push_back(true);
-                    walls.push_back(false);
-                    break;
-                default:
-                    cerr << "No matching symbol" << endl;
-                    exit(0);
-            }
-        }
-    }
-    position = p;
-    width = w;
-}
-
-void gameState::updateplayer(){
-    if( arena.at(position.first).at(position.second) == 6){
-        arena.at(position.first).at(position.second) = 2;
-    }
-    else{
-        arena.at(position.first).at(position.second) = 0;
-    }
-}
-
-void gameState::updatespot(std::pair<int,int> spot, int new_space){
-    if(new_space == 5 || new_space == 6){
-        position = spot;
-    }
-    arena.at(spot.first).at(spot.second) = new_space;
-}
-*/
-
 bool gameState::updateArena(std::pair<int,int> move){
     //print();
     //std::cout << position.first << ", " << position.second << std::endl;
@@ -218,27 +149,11 @@ bool gameState::left(){
 }
 
 bool gameState::isSolved(){
-    /*
-    for(int i = 0; i < targets.size(); ++i){
-        for(int j = 0; j < targets.at(i).size(); ++j){
-            if(targets.at(i).at(j)){
-                if(barrels.at(i).at(j)){
-                    return false;
-                }
-            }
-        }
-    }
-    */
     if(barrels == targets){
         return true;
     }
     return false;
 }
-/*
-std::vector<std::vector<int> > gameState::getArena(){
-    return arena;
-}
-*/
 
 void gameState::print(){
     int pos = position.first * width + position.second;

@@ -109,44 +109,13 @@ void printBt(vector<int> bt){
         }
     }
     rfil.close();
-    /*
-    int i = 1;
-    for(auto &e: bt){
-        cout << i << ") ";
-        switch(e){
-            case rht: cout << "Right" << endl;
-                break;
-            case lft: cout << "Left" << endl;
-                break;
-            case up: cout << "Up" << endl;
-                break;
-            case down: cout << "Down" << endl;
-                break;
-            default: cerr << "Invalid move: " + e << endl;
-                return;
-                break;
-        }
-        ++i;
-    }
-    */
 }
 bool isrepeat(vector<gameState> &h, gameState c){
     for(auto &e: h){
         if(e.isequal(c)){
-            /*
-            cout << "returned true" << endl;
-            e.print();
-            cout << "comaping to: " << endl;
-            c.print();
-            */
             return true;
         }
     }
-            /*
-    cout << "returned false" << endl;
-    cout << "false comaping to: " << endl;
-    c.print();
-            */
     return false;
 }
 
