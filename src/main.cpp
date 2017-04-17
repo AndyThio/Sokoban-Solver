@@ -91,6 +91,7 @@ gameState formArena(){
 }
 
 void printBt(vector<int> bt){
+    /*
     ofstream rfil;
     rfil.open("../bin/results.txt");
     for(auto &e: bt){
@@ -109,7 +110,7 @@ void printBt(vector<int> bt){
         }
     }
     rfil.close();
-    /*
+    */
     int i = 1;
     for(auto &e: bt){
         cout << i << ") ";
@@ -128,7 +129,6 @@ void printBt(vector<int> bt){
         }
         ++i;
     }
-    */
 }
 bool isrepeat(vector<gameState> &h, gameState c){
     for(auto &e: h){
@@ -169,14 +169,12 @@ vector<int> findSolution(gameState s){
         
 
         temp = pq.top();
-        /*
         cout << "Current Depth: " << temp.dept << endl;
         cout << "Current Heur: " << temp.cost -temp.dept << endl;
         cout << "backtrace printout" << endl;
         printBt(temp.arena.getlastmove());
         cout << "End back Trace" << endl;
         temp.arena.print();
-        */
         //cout << "not top" << endl;
         pq.pop();
 
