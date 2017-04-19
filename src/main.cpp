@@ -150,6 +150,44 @@ bool isrepeat(vector<gameState> &h, gameState c){
     return false;
 }
 
+void logGame(vector<gameState> g,unsigned int n){
+    ofstream log;
+    log.open("../log/alreadySeenLog.txt", ios::app);
+    log << "testing if I am putting into there" << endl;
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(log.rdbuf());
+
+    cout << endl << "====================================================" << endl;
+    cout << "Number of nodes Expanded: " << n << endl;
+
+    for(auto &e: g){
+        cout << "--------------------" << endl;
+        e.print();
+    }
+
+    cout.rdbuf(coutbuf);
+    log.close();
+}
+
+/*
+void logQueue(priority_queue<queueNode> g, unsigned int n){
+    fstream log;
+    log.open("queueLog.txt", ios::app);
+    streambuf *coutbuf = cout.rdbuf();
+    cout.rdbuf(log.rdbuf());
+
+    cout << endl << "====================================================" << endl;
+    cout << "Number of nodes Expanded: " << n << endl;
+
+    while(!g.empty())
+        cout << "--------------------" << endl;
+        g.top().arena.print();
+        g.pop();
+    }
+
+    cout.rdbuf(coutbuf);
+}
+*/
 
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
@@ -163,18 +201,39 @@ vector<int> findSolution(gameState s){
     vector<gameState> alreadyseen;
     queueNode temp = pq.top();
 
+    //loggging variables
+    unsigned int numExpanded = 0;
+    unsigned int numRepeats = 0;
+    unsigned int numReCycle = 0;
+
     while(!pq.empty()){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
-        
+
 
         temp = pq.top();
+        //Logging things
+        cout << "====================================================" << endl;
+        cout << "Nodes Expanded" << numExpanded++ << endl << endl;
+        cout << "Size of quene: " << pq.size() << endl;
+        cout << "Size of alreadyseen: " << alreadyseen.size() << endl;
+        cout << endl;
+        cout << "Number of Repeats previous cycle: " << numReCycle << endl;
+        numReCycle = 0;
+        cout << "Total number of Repeats so far: " << numRepeats << endl;
+        cout << endl;
         cout << "Current Depth: " << temp.dept << endl;
         cout << "Current Heur: " << temp.cost -temp.dept << endl;
         cout << "backtrace printout" << endl;
         printBt(temp.arena.getlastmove());
         cout << "End back Trace" << endl;
         temp.arena.print();
+        if(numExpanded%100 == 0){
+            // logQueue(pq, numExpanded);
+            cerr << "Outputing a Game log" << endl;
+            logGame(alreadyseen, numExpanded);
+        }
+        cout << "====================================================" << endl;
         //cout << "not top" << endl;
         pq.pop();
 
@@ -196,6 +255,10 @@ vector<int> findSolution(gameState s){
             alreadyseen.push_back(tempr);
             pq.push(queueNode(tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
+        if(isrepeat(alreadyseen, tempr)){
+            ++numReCycle;
+            ++numRepeats;
+        }
         //cout << "Moving left" << endl;
         if(templ.left() && !isrepeat(alreadyseen, templ)){
             if(templ.isSolved()){
@@ -203,6 +266,10 @@ vector<int> findSolution(gameState s){
             }
             alreadyseen.push_back(templ);
             pq.push(queueNode(templ,temp.dept+1,temp.dept+1+templ.getheur()));
+        }
+        if(isrepeat(alreadyseen, templ)){
+            ++numReCycle;
+            ++numRepeats;
         }
         //cout << "Moving down" << endl;
         if(tempd.down() && !isrepeat(alreadyseen, tempd)){
@@ -212,6 +279,10 @@ vector<int> findSolution(gameState s){
             alreadyseen.push_back(tempd);
             pq.push(queueNode(tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
+        if(isrepeat(alreadyseen, tempd)){
+            ++numReCycle;
+            ++numRepeats;
+        }
         //cout << "Moving up" << endl;
         if(tempu.up() && !isrepeat(alreadyseen, tempu)){
             if(tempu.isSolved()){
@@ -219,6 +290,10 @@ vector<int> findSolution(gameState s){
             }
             alreadyseen.push_back(tempu);
             pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
+        }
+        if(isrepeat(alreadyseen, tempu)){
+            ++numReCycle;
+            ++numRepeats;
         }
     }
     //TODO: generate some kind of backtrace
