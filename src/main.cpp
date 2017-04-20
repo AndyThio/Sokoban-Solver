@@ -214,7 +214,7 @@ vector<int> findSolution(gameState s){
         temp = pq.top();
         //Logging things
         cout << "====================================================" << endl;
-        cout << "Nodes Expanded" << numExpanded++ << endl << endl;
+        cout << "Nodes Expanded: " << numExpanded++ << endl << endl;
         cout << "Size of quene: " << pq.size() << endl;
         cout << "Size of alreadyseen: " << alreadyseen.size() << endl;
         cout << endl;
@@ -260,7 +260,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving left" << endl;
-        if(templ.left() && !isrepeat(alreadyseen, templ)){
+        if(templ.left()){
             if(templ.isSolved()){
                 return templ.getlastmove();
             }
@@ -272,7 +272,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving down" << endl;
-        if(tempd.down() && !isrepeat(alreadyseen, tempd)){
+        if(tempd.down()){
             if(tempd.isSolved()){
                 return tempd.getlastmove();
             }
@@ -284,7 +284,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving up" << endl;
-        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
+        if(tempu.up() ){
             if(tempu.isSolved()){
                 return tempu.getlastmove();
             }
