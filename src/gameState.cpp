@@ -72,7 +72,6 @@ bool gameState::updateArena(std::pair<int,int> move){
         return false;
     }
     //std::cout << "a  found " << moves << " , "<< barrels.size() << std::endl;
-    barrels.at(moves);
 
     //std::cout << "going to check the moves" <<  std::endl;
     if(walls.at(moves)){
