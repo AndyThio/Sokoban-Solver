@@ -191,54 +191,11 @@ void gameState::print(){
 
 int gameState::getheur(){
     //std::cout << "start" << std::endl;
-    std::vector<std::pair<int,int> > barrel;
-    std::vector<std::pair<int,int> > target;
     int h = 0;
-    int i, j;
-
-    for(int k = 0; k < barrels.size(); ++k){
-        i = k/width;
-        j = k%width;
-        if(!(barrels.at(k) && targets.at(k))){
-            if(barrels.at(k)){
-                barrel.push_back(std::make_pair(i,j));
-            }
-            if(targets.at(k)){
-                target.push_back(std::make_pair(i,j));
-            }
+    for(int i = 0; i < barrels.size(); ++i){
+        if(barrels.at(i) != targets.at(i)){
+            ++h;
         }
-    }
-
-    //std::cout << "inmid" << std::endl;
-    std::pair<int,int> curr = position;
-    while(!barrel.empty() || !target.empty()){
-        //std::cout << "First for" << std::endl;
-        int min = std::numeric_limits<int>::max();
-        auto iter = barrel.begin();
-        for(auto e = barrel.begin(); e != barrel.end();++e){
-            int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
-            if( dist < min){
-                min = dist;
-                iter = e;
-            }
-        }
-        curr = *iter;
-        barrel.erase(iter);
-        h+= min;
-
-        //std::cout << "second for" << std::endl;
-        min = std::numeric_limits<int>::max();
-        iter = target.begin();
-        for(auto e = target.begin(); e != target.end();++e){
-            int dist = abs((*e).first-curr.first) + abs((*e).second - curr.second);
-            if( dist < min){
-                min = dist;
-                iter = e;
-            }
-        }
-        curr = *iter;
-        target.erase(iter);
-        h+= min;
     }
     //std::cout << "end" << std::endl << std::endl;
     return h;
