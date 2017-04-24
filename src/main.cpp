@@ -43,7 +43,10 @@ struct histNode{
         position = g.position;
     }
     bool operator<(const histNode &rhs)const{
-        return barrels < rhs.barrels || position < rhs.position;
+        if(barrels == rhs.barrels){
+            return position < rhs.position;
+        }
+        return barrels < rhs.barrels;
     }
     bool operator==(const histNode &rhs)const{
         return barrels == rhs.barrels && position == rhs.position;
@@ -142,7 +145,7 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 bool isrepeat(hist_cont &h, gameState c){
-    return h.find(c) != h.end();
+    return h.find(histNode(c)) != h.end();
 }
 
 //TODO: need to generate the vector int
