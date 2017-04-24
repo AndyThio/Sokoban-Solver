@@ -3,9 +3,10 @@
 
 #include <vector>
 #include <utility>
+#include <functional>
 
-class gameState{
-    private:
+struct gameState{
+    //private:
         std::vector<bool> barrels;
         std::vector<bool> targets;
         std::vector<bool> walls;
@@ -13,7 +14,7 @@ class gameState{
         //Position of the player
         std::pair<int,int> position;
         std::vector<int> lastmove;
-    public:
+    //public:
         gameState();
         gameState(std::vector<std::vector<int> > a,std::pair<int,int> p, int w);
         bool down();
@@ -26,7 +27,8 @@ class gameState{
         int getheur();
         std::vector<int> getlastmove();
         bool isequal(const gameState s);
-    private:
+        size_t gethash();
+    //private:
         bool updateArena(std::pair<int,int> move);
 };
 

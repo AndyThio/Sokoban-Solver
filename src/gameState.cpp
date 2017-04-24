@@ -1,5 +1,7 @@
 #include <iostream>
 #include <limits>
+#include <functional>
+#include <vector>
 
 #include "gameState.h"
 
@@ -253,3 +255,8 @@ bool gameState::isequal(const gameState m){
     }
     return true;
 }
+/*
+size_t gameState::gethash(){
+    return std::hash<std::vector<bool> > {}(barrels) ^ ( std::hash<std::pair<int,int> > {} (position) << 1);
+}
+*/

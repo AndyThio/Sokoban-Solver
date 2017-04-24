@@ -1,4 +1,7 @@
 #include <iostream>
+#include <unordered_map>
+#include <map>
+#include <functional>
 #include <fstream>
 #include <pthread.h>
 #include <vector>
@@ -29,6 +32,33 @@ const int rht = 7;
 const int lft = 8;
 const int down = 9;
 const int up = 10;
+
+struct histNode{
+    vector<bool> barrels;
+    pair<int, int> position;
+
+    histNode(gameState g){
+        barrels = g.barrels;
+        position = g.position;
+    }
+    bool operator<(const histNode &rhs)const{
+        return barrels < rhs.barrels || position < rhs.position;
+    }
+    bool operator==(const histNode &rhs)const{
+        return barrels == rhs.barrels && position == rhs.position;
+    }
+};
+
+bool cmpLambda(const gameState &lhs, const gameState &rhs) {
+    if(lhs.barrels != rhs.barrels){
+        return lhs.barrels > rhs.barrels;
+    }else{
+        return lhs.position > rhs.position;
+    }
+};
+
+typedef map<histNode,bool> hist_cont;
+
 
 struct queueNode{
     gameState arena;
@@ -110,15 +140,9 @@ void printBt(vector<int> bt){
     }
     rfil.close();
 }
-bool isrepeat(vector<gameState> &h, gameState c){
-    for(auto &e: h){
-        if(e.isequal(c)){
-            return true;
-        }
-    }
-    return false;
+bool isrepeat(hist_cont &h, gameState c){
+    return h.find(c) != h.end();
 }
-
 
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
@@ -129,13 +153,13 @@ vector<int> findSolution(gameState s){
     bool isfinished = false;
     gameState finishedState;
     //could be just tracking barrels + positi
-    vector<gameState> alreadyseen;
+    hist_cont alreadyseen;
     queueNode temp = pq.top();
 
     while(!pq.empty()){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
-        
+
 
         temp = pq.top();
         /*
@@ -164,7 +188,7 @@ vector<int> findSolution(gameState s){
             if(tempr.isSolved()){
                 return tempr.getlastmove();
             }
-            alreadyseen.push_back(tempr);
+            alreadyseen.insert(make_pair(histNode(tempr),true));
             pq.push(queueNode(tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
         //cout << "Moving left" << endl;
@@ -172,7 +196,7 @@ vector<int> findSolution(gameState s){
             if(templ.isSolved()){
                 return templ.getlastmove();
             }
-            alreadyseen.push_back(templ);
+            alreadyseen.insert(make_pair(histNode(templ),true));
             pq.push(queueNode(templ,temp.dept+1,temp.dept+1+templ.getheur()));
         }
         //cout << "Moving down" << endl;
@@ -180,7 +204,7 @@ vector<int> findSolution(gameState s){
             if(tempd.isSolved()){
                 return tempd.getlastmove();
             }
-            alreadyseen.push_back(tempd);
+            alreadyseen.insert(make_pair(histNode(tempd),true));
             pq.push(queueNode(tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
         //cout << "Moving up" << endl;
@@ -188,7 +212,7 @@ vector<int> findSolution(gameState s){
             if(tempu.isSolved()){
                 return tempu.getlastmove();
             }
-            alreadyseen.push_back(tempu);
+            alreadyseen.insert(make_pair(histNode(tempu),true));
             pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
     }
