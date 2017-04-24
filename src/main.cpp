@@ -260,7 +260,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving left" << endl;
-        if(templ.left()){
+        if(templ.left()&& !isrepeat(alreadyseen, templ)){
             if(templ.isSolved()){
                 return templ.getlastmove();
             }
@@ -272,7 +272,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving down" << endl;
-        if(tempd.down()){
+        if(tempd.down()&& !isrepeat(alreadyseen, tempd)){
             if(tempd.isSolved()){
                 return tempd.getlastmove();
             }
@@ -284,7 +284,7 @@ vector<int> findSolution(gameState s){
             ++numRepeats;
         }
         //cout << "Moving up" << endl;
-        if(tempu.up() ){
+        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
             if(tempu.isSolved()){
                 return tempu.getlastmove();
             }
