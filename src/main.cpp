@@ -7,6 +7,7 @@
 #include <vector>
 #include <queue>
 #include <string>
+#include <set>
 using namespace std;
 
 #include "gameState.h"
@@ -57,7 +58,7 @@ bool cmpLambda(const gameState &lhs, const gameState &rhs) {
     }
 };
 
-typedef map<histNode,bool> hist_cont;
+typedef set<histNode> hist_cont;
 
 
 struct queueNode{
@@ -188,7 +189,7 @@ vector<int> findSolution(gameState s){
             if(tempr.isSolved()){
                 return tempr.getlastmove();
             }
-            alreadyseen.insert(make_pair(histNode(tempr),true));
+            alreadyseen.insert(histNode(tempr));
             pq.push(queueNode(tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
         }
         //cout << "Moving left" << endl;
@@ -196,7 +197,7 @@ vector<int> findSolution(gameState s){
             if(templ.isSolved()){
                 return templ.getlastmove();
             }
-            alreadyseen.insert(make_pair(histNode(templ),true));
+            alreadyseen.insert(histNode(templ));
             pq.push(queueNode(templ,temp.dept+1,temp.dept+1+templ.getheur()));
         }
         //cout << "Moving down" << endl;
@@ -204,7 +205,7 @@ vector<int> findSolution(gameState s){
             if(tempd.isSolved()){
                 return tempd.getlastmove();
             }
-            alreadyseen.insert(make_pair(histNode(tempd),true));
+            alreadyseen.insert(histNode(tempd));
             pq.push(queueNode(tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
         }
         //cout << "Moving up" << endl;
@@ -212,7 +213,7 @@ vector<int> findSolution(gameState s){
             if(tempu.isSolved()){
                 return tempu.getlastmove();
             }
-            alreadyseen.insert(make_pair(histNode(tempu),true));
+            alreadyseen.insert(histNode(tempu));
             pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
         }
     }
