@@ -4,10 +4,14 @@
 #include <functional>
 #include <fstream>
 #include <pthread.h>
+#include <thread>
 #include <vector>
 #include <queue>
 #include <string>
 #include <set>
+#include <mutex>
+#include <atomic>
+#include <cassert>
 using namespace std;
 
 #include "gameState.h"
@@ -34,6 +38,13 @@ const int lft = 8;
 const int down = 9;
 const int up = 10;
 
+const int max_threads = thread::hardware_concurrency();
+atomic_bool isfinished(false);
+vector<int> finalbt;
+
+pthread_rwlock_t asLock;
+mutex pqLock;
+
 struct histNode{
     vector<bool> barrels;
     pair<int, int> position;
@@ -53,17 +64,6 @@ struct histNode{
     }
 };
 
-bool cmpLambda(const gameState &lhs, const gameState &rhs) {
-    if(lhs.barrels != rhs.barrels){
-        return lhs.barrels > rhs.barrels;
-    }else{
-        return lhs.position > rhs.position;
-    }
-};
-
-typedef set<histNode> hist_cont;
-
-
 struct queueNode{
     gameState arena;
     int dept;
@@ -73,7 +73,17 @@ struct queueNode{
     queueNode(gameState g, int d, int c)
         :arena(g), dept(d),cost(c)
     {}
+    
+    bool operator>(const queueNode &rhs)const{
+        return cost > rhs.cost;
+    }
 };
+
+
+typedef priority_queue<queueNode , vector<queueNode> ,greater<queueNode> > pqType;
+typedef set<histNode> hist_cont;
+
+
 
 gameState formArena(){
     vector<vector<int> > arena;
@@ -144,27 +154,121 @@ void printBt(vector<int> bt){
     }
     rfil.close();
 }
-bool isrepeat(hist_cont &h, gameState c){
-    return h.find(histNode(c)) != h.end();
+bool isrepeat(const hist_cont &h, gameState c){
+    pthread_rwlock_rdlock(&asLock);
+    bool ret = h.find(histNode(c)) != h.end();
+    pthread_rwlock_unlock(&asLock);
+    return ret;
+}
+
+void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
+    //cout << "allocating stuff" << endl;
+    gameState tempr = g.arena;
+    gameState templ = tempr;
+    gameState tempu = tempr;
+    gameState tempd = tempr;
+    
+    vector<queueNode> toAddpq;
+
+    //cout << "current depth" << temp.dept << endl;
+    //temp.arena.print();
+    //cout << endl;
+
+    //cout << "Moving right" << endl;
+    if(tempr.right() && !isrepeat(alreadyseen, tempr)){
+        pthread_rwlock_wrlock(&asLock);
+        alreadyseen.insert(histNode(tempr));
+        pthread_rwlock_unlock(&asLock);
+        
+        if(tempr.isSolved()){
+            isfinished = true;
+            finalbt = tempr.getlastmove();
+            return;
+        }
+        
+        toAddpq.push_back(queueNode(tempr,g.dept+1,g.dept+1+tempr.getheur()));
+    }
+    //cout << "Moving left" << endl;
+    if(templ.left() && !isrepeat(alreadyseen, templ)){
+        pthread_rwlock_wrlock(&asLock);
+        alreadyseen.insert(histNode(templ));
+        pthread_rwlock_unlock(&asLock);
+        
+        if(templ.isSolved()){
+            isfinished = true;
+            finalbt = templ.getlastmove();
+            return;
+        }
+        
+        toAddpq.push_back(queueNode(templ,g.dept+1,g.dept+1+templ.getheur()));
+    }
+    //cout << "Moving down" << endl;
+    if(tempd.down() && !isrepeat(alreadyseen, tempd)){
+        pthread_rwlock_wrlock(&asLock);
+        alreadyseen.insert(histNode(tempd));
+        pthread_rwlock_unlock(&asLock);
+        
+        if(tempd.isSolved()){
+            isfinished = true;
+            finalbt = tempd.getlastmove();
+            return;
+        }
+        
+        toAddpq.push_back(queueNode(tempd,g.dept+1,g.dept+1+tempd.getheur()));
+    }
+    //cout << "Moving up" << endl;
+    if(tempu.up() && !isrepeat(alreadyseen, tempu)){
+        pthread_rwlock_wrlock(&asLock);
+        alreadyseen.insert(histNode(tempu));
+        pthread_rwlock_unlock(&asLock);
+        
+        if(tempu.isSolved()){
+            isfinished = true;
+            finalbt = tempu.getlastmove();
+            return;
+        }
+        
+        toAddpq.push_back(queueNode(tempu,g.dept+1,g.dept+1+tempu.getheur()));
+    }
+    
+    if(!toAddpq.empty()){
+        pqLock.lock();
+        for(auto &e: toAddpq){
+            pq.push(e);
+        }
+        pqLock.unlock();
+    }
+    
+    return;
 }
 
 //TODO: need to generate the vector int
 vector<int> findSolution(gameState s){
-    auto mycmp = [](const queueNode& rhs, const queueNode& lhs)
-        {return rhs.cost > lhs.cost;};
-    priority_queue<queueNode , vector<queueNode> ,decltype(mycmp)> pq(mycmp);
+    pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
-    bool isfinished = false;
+    vector<thread> thd;
     gameState finishedState;
     //could be just tracking barrels + positi
     hist_cont alreadyseen;
     queueNode temp = pq.top();
-
-    while(!pq.empty()){
+    pq.pop();
+    thd.push_back(thread(expandNode,ref(temp),ref(alreadyseen),ref(pq)));
+    while(!isfinished){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
+        
+        cout << thd.size() << endl;
 
-
+        while(pq.empty() || thd.size() > max_threads){
+            for(auto it = thd.begin(); it < thd.end(); ++it){
+                cout << "testing" << endl;
+                if(it->joinable()){
+                    it->join();
+                    thd.erase(it);
+                }
+            }
+        }
+        pqLock.lock();
         temp = pq.top();
         /*
         cout << "Current Depth: " << temp.dept << endl;
@@ -176,49 +280,8 @@ vector<int> findSolution(gameState s){
         */
         //cout << "not top" << endl;
         pq.pop();
-
-        //cout << "allocating stuff" << endl;
-        gameState tempr = temp.arena;
-        gameState templ = tempr;
-        gameState tempu = tempr;
-        gameState tempd = tempr;
-
-        //cout << "current depth" << temp.dept << endl;
-        //temp.arena.print();
-        //cout << endl;
-
-        //cout << "Moving right" << endl;
-        if(tempr.right() && !isrepeat(alreadyseen, tempr)){
-            if(tempr.isSolved()){
-                return tempr.getlastmove();
-            }
-            alreadyseen.insert(histNode(tempr));
-            pq.push(queueNode(tempr,temp.dept+1,temp.dept+1+tempr.getheur()));
-        }
-        //cout << "Moving left" << endl;
-        if(templ.left() && !isrepeat(alreadyseen, templ)){
-            if(templ.isSolved()){
-                return templ.getlastmove();
-            }
-            alreadyseen.insert(histNode(templ));
-            pq.push(queueNode(templ,temp.dept+1,temp.dept+1+templ.getheur()));
-        }
-        //cout << "Moving down" << endl;
-        if(tempd.down() && !isrepeat(alreadyseen, tempd)){
-            if(tempd.isSolved()){
-                return tempd.getlastmove();
-            }
-            alreadyseen.insert(histNode(tempd));
-            pq.push(queueNode(tempd,temp.dept+1,temp.dept+1+tempd.getheur()));
-        }
-        //cout << "Moving up" << endl;
-        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
-            if(tempu.isSolved()){
-                return tempu.getlastmove();
-            }
-            alreadyseen.insert(histNode(tempu));
-            pq.push(queueNode(tempu,temp.dept+1,temp.dept+1+tempu.getheur()));
-        }
+        pqLock.unlock();
+        thd.push_back(thread(expandNode,ref(temp),ref(alreadyseen),ref(pq)));
     }
     //TODO: generate some kind of backtrace
 
