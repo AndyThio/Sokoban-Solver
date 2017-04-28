@@ -167,8 +167,6 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
     gameState templ = tempr;
     gameState tempu = tempr;
     gameState tempd = tempr;
-    
-    vector<queueNode> toAddpq;
 
     //cout << "current depth" << temp.dept << endl;
     //temp.arena.print();
@@ -186,7 +184,7 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        toAddpq.push_back(queueNode(tempr,g.dept+1,g.dept+1+tempr.getheur()));
+        pq.push(queueNode(tempr,g.dept+1,g.dept+1+tempr.getheur()));
     }
     //cout << "Moving left" << endl;
     if(templ.left() && !isrepeat(alreadyseen, templ)){
@@ -200,7 +198,7 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        toAddpq.push_back(queueNode(templ,g.dept+1,g.dept+1+templ.getheur()));
+        pq.push(queueNode(templ,g.dept+1,g.dept+1+templ.getheur()));
     }
     //cout << "Moving down" << endl;
     if(tempd.down() && !isrepeat(alreadyseen, tempd)){
@@ -214,7 +212,7 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        toAddpq.push_back(queueNode(tempd,g.dept+1,g.dept+1+tempd.getheur()));
+        pq.push(queueNode(tempd,g.dept+1,g.dept+1+tempd.getheur()));
     }
     //cout << "Moving up" << endl;
     if(tempu.up() && !isrepeat(alreadyseen, tempu)){
@@ -228,22 +226,15 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        toAddpq.push_back(queueNode(tempu,g.dept+1,g.dept+1+tempu.getheur()));
+        pq.push(queueNode(tempu,g.dept+1,g.dept+1+tempu.getheur()));
     }
-    
-    if(!toAddpq.empty()){
-        pqLock.lock();
-        for(auto &e: toAddpq){
-            pq.push(e);
-        }
-        pqLock.unlock();
-    }
+    //cout << "adding " << toAddpq.size() << endl;
     
     return;
 }
 
 //TODO: need to generate the vector int
-vector<int> findSolution(gameState s){
+void findSolution(gameState s){
     pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
     vector<thread> thd;
@@ -251,24 +242,36 @@ vector<int> findSolution(gameState s){
     //could be just tracking barrels + positi
     hist_cont alreadyseen;
     queueNode temp = pq.top();
-    pq.pop();
-    thd.push_back(thread(expandNode,ref(temp),ref(alreadyseen),ref(pq)));
+    //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
+    //expandNode(temp,alreadyseen,pq);
     while(!isfinished){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
         
-        cout << thd.size() << endl;
+        //cout << thd.size() << endl;
+        //cout << "Number of max threds: " <<  max_threads << endl;
 
-        while(pq.empty() || thd.size() > max_threads){
+        //while(pq.empty() || thd.size() > max_threads){
+        /*
+        while(pq.empty()){
             for(auto it = thd.begin(); it < thd.end(); ++it){
-                cout << "testing" << endl;
                 if(it->joinable()){
+                    cout << "stopping at join" << endl;
                     it->join();
-                    thd.erase(it);
+                    cout << "thread has been joined" << endl;
+                    //thd.erase(it);
+                    //cout << "thread has been erased from vector, new size: " << thd.size() << endl;
+                    cout << "size of the pq is " << pq.size() << endl;
                 }
             }
+            if(isfinished){
+                assert(false);
+            }
         }
+        */
+        //cout << "checking pq lock" << endl;
         pqLock.lock();
+        //cout << "past pq lock" << endl;
         temp = pq.top();
         /*
         cout << "Current Depth: " << temp.dept << endl;
@@ -280,9 +283,13 @@ vector<int> findSolution(gameState s){
         */
         //cout << "not top" << endl;
         pq.pop();
+        //cout << "unlocking pq lock" << endl;
         pqLock.unlock();
-        thd.push_back(thread(expandNode,ref(temp),ref(alreadyseen),ref(pq)));
+        //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
+        expandNode(temp,alreadyseen,pq);
     }
+    cout << "priting results" << endl;
+    printBt(finalbt);
     //TODO: generate some kind of backtrace
 
 
@@ -296,7 +303,5 @@ vector<int> findSolution(gameState s){
 int main(){
     gameState arena;
     arena = formArena();
-    auto result = findSolution(arena);
-    cout << "priting results" << endl;
-    printBt(result);
+    findSolution(arena);
 }
