@@ -43,7 +43,7 @@ atomic_bool isfinished(false);
 vector<int> finalbt;
 
 pthread_rwlock_t asLock;
-mutex pqLock;
+pthread_rwlock_t pqLock;
 
 struct histNode{
     vector<bool> barrels;
@@ -161,7 +161,7 @@ bool isrepeat(const hist_cont &h, gameState c){
     return ret;
 }
 
-void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
+void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
     //cout << "allocating stuff" << endl;
     gameState tempr = g.arena;
     gameState templ = tempr;
@@ -183,8 +183,10 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             finalbt = tempr.getlastmove();
             return;
         }
-        
-        pq.push(queueNode(tempr,g.dept+1,g.dept+1+tempr.getheur()));
+        int heurR = g.dept+1+tempr.getheur();
+        pthread_rwlock_wrlock(&pqLock);
+        pq.push(queueNode(tempr,g.dept+1,heurR));
+        pthread_rwlock_unlock(&pqLock);
     }
     //cout << "Moving left" << endl;
     if(templ.left() && !isrepeat(alreadyseen, templ)){
@@ -198,7 +200,10 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        pq.push(queueNode(templ,g.dept+1,g.dept+1+templ.getheur()));
+        int heurL = g.dept+1+templ.getheur();
+        pthread_rwlock_wrlock(&pqLock);
+        pq.push(queueNode(templ,g.dept+1,heurL));
+        pthread_rwlock_unlock(&pqLock);
     }
     //cout << "Moving down" << endl;
     if(tempd.down() && !isrepeat(alreadyseen, tempd)){
@@ -212,7 +217,10 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        pq.push(queueNode(tempd,g.dept+1,g.dept+1+tempd.getheur()));
+        int heurD = g.dept+1+tempd.getheur();
+        pthread_rwlock_wrlock(&pqLock);
+        pq.push(queueNode(tempd,g.dept+1,heurD));
+        pthread_rwlock_unlock(&pqLock);
     }
     //cout << "Moving up" << endl;
     if(tempu.up() && !isrepeat(alreadyseen, tempu)){
@@ -226,7 +234,10 @@ void expandNode(const queueNode &g, hist_cont &alreadyseen, pqType &pq){
             return;
         }
         
-        pq.push(queueNode(tempu,g.dept+1,g.dept+1+tempu.getheur()));
+        int heurU = g.dept+1+tempu.getheur();
+        pthread_rwlock_wrlock(&pqLock);
+        pq.push(queueNode(tempu,g.dept+1,heurU));
+        pthread_rwlock_unlock(&pqLock);
     }
     //cout << "adding " << toAddpq.size() << endl;
     
@@ -242,6 +253,7 @@ void findSolution(gameState s){
     //could be just tracking barrels + positi
     hist_cont alreadyseen;
     queueNode temp = pq.top();
+    bool pqempty = false;
     //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
     //expandNode(temp,alreadyseen,pq);
     while(!isfinished){
@@ -252,44 +264,36 @@ void findSolution(gameState s){
         //cout << "Number of max threds: " <<  max_threads << endl;
 
         //while(pq.empty() || thd.size() > max_threads){
-        /*
-        while(pq.empty()){
+        while(pqempty || thd.size() > max_threads){
             for(auto it = thd.begin(); it < thd.end(); ++it){
                 if(it->joinable()){
-                    cout << "stopping at join" << endl;
+                    //cout << "stopping at join" << endl;
                     it->join();
-                    cout << "thread has been joined" << endl;
-                    //thd.erase(it);
+                    //cout << "thread has been joined" << endl;
+                    thd.erase(it);
                     //cout << "thread has been erased from vector, new size: " << thd.size() << endl;
-                    cout << "size of the pq is " << pq.size() << endl;
                 }
             }
-            if(isfinished){
-                assert(false);
-            }
+            pthread_rwlock_rdlock(&pqLock);
+            pqempty = pq.empty();
+            pthread_rwlock_unlock(&pqLock);
         }
-        */
         //cout << "checking pq lock" << endl;
-        pqLock.lock();
-        //cout << "past pq lock" << endl;
+        
+        pthread_rwlock_wrlock(&pqLock);
         temp = pq.top();
-        /*
-        cout << "Current Depth: " << temp.dept << endl;
-        cout << "Current Heur: " << temp.cost -temp.dept << endl;
-        cout << "backtrace printout" << endl;
-        printBt(temp.arena.getlastmove());
-        cout << "End back Trace" << endl;
-        temp.arena.print();
-        */
-        //cout << "not top" << endl;
         pq.pop();
-        //cout << "unlocking pq lock" << endl;
-        pqLock.unlock();
-        //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
-        expandNode(temp,alreadyseen,pq);
+        pqempty = pq.empty();
+        pthread_rwlock_unlock(&pqLock);
+        thd.push_back(thread(expandNode,temp,ref(alreadyseen),ref(pq)));
+        //expandNode(temp,alreadyseen,pq);
     }
     cout << "priting results" << endl;
     printBt(finalbt);
+    cout << "waiting for all threads to end" << endl;
+    for(auto &e: thd){
+        e.join();
+    }
     //TODO: generate some kind of backtrace
 
 
@@ -304,4 +308,5 @@ int main(){
     gameState arena;
     arena = formArena();
     findSolution(arena);
+    cout << "ending the program" << endl;
 }
