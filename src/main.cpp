@@ -8,6 +8,7 @@
 #include <queue>
 #include <string>
 #include <set>
+#include <chrono>
 using namespace std;
 
 #include "gameState.h"
@@ -233,7 +234,17 @@ vector<int> findSolution(gameState s){
 int main(){
     gameState arena;
     arena = formArena();
+    
+    chrono::time_point<chrono::system_clock> start, end;
+    chrono::duration<double> elapsed_time;
+    
+    start= chrono::system_clock::now();
+    
     auto result = findSolution(arena);
     cout << "priting results" << endl;
     printBt(result);
+    
+    end = chrono::system_clock::now();
+    elapsed_time = end-start;
+    cout << endl << "Time elapsed: " << elapsed_time.count() << endl << endl;
 }
