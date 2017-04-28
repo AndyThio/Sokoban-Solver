@@ -9,13 +9,10 @@
 #include <queue>
 #include <string>
 #include <set>
-<<<<<<< HEAD
 #include <mutex>
 #include <atomic>
 #include <cassert>
-=======
 #include <chrono>
->>>>>>> master
 using namespace std;
 
 #include "gameState.h"
