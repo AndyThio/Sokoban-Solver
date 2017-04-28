@@ -74,7 +74,7 @@ struct queueNode{
     queueNode(gameState g, int d, int c)
         :arena(g), dept(d),cost(c)
     {}
-    
+
     bool operator>(const queueNode &rhs)const{
         return cost > rhs.cost;
     }
@@ -178,7 +178,7 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
         pthread_rwlock_wrlock(&asLock);
         alreadyseen.insert(histNode(tempr));
         pthread_rwlock_unlock(&asLock);
-        
+
         if(tempr.isSolved()){
             isfinished = true;
             finalbt = tempr.getlastmove();
@@ -194,13 +194,13 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
         pthread_rwlock_wrlock(&asLock);
         alreadyseen.insert(histNode(templ));
         pthread_rwlock_unlock(&asLock);
-        
+
         if(templ.isSolved()){
             isfinished = true;
             finalbt = templ.getlastmove();
             return;
         }
-        
+
         int heurL = g.dept+1+templ.getheur();
         pthread_rwlock_wrlock(&pqLock);
         pq.push(queueNode(templ,g.dept+1,heurL));
@@ -211,13 +211,13 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
         pthread_rwlock_wrlock(&asLock);
         alreadyseen.insert(histNode(tempd));
         pthread_rwlock_unlock(&asLock);
-        
+
         if(tempd.isSolved()){
             isfinished = true;
             finalbt = tempd.getlastmove();
             return;
         }
-        
+
         int heurD = g.dept+1+tempd.getheur();
         pthread_rwlock_wrlock(&pqLock);
         pq.push(queueNode(tempd,g.dept+1,heurD));
@@ -228,20 +228,21 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
         pthread_rwlock_wrlock(&asLock);
         alreadyseen.insert(histNode(tempu));
         pthread_rwlock_unlock(&asLock);
-        
+
         if(tempu.isSolved()){
             isfinished = true;
             finalbt = tempu.getlastmove();
             return;
         }
-        
+
         int heurU = g.dept+1+tempu.getheur();
         pthread_rwlock_wrlock(&pqLock);
         pq.push(queueNode(tempu,g.dept+1,heurU));
         pthread_rwlock_unlock(&pqLock);
     }
     //cout << "adding " << toAddpq.size() << endl;
-    
+    //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
+
     return;
 }
 
@@ -260,7 +261,7 @@ void findSolution(gameState s){
     while(!isfinished){
         //cout << "iter start" << endl;
         //cout << "size of already: " << alreadyseen.size()<< endl;
-        
+
         //cout << thd.size() << endl;
         //cout << "Number of max threds: " <<  max_threads << endl;
 
@@ -280,7 +281,7 @@ void findSolution(gameState s){
             pthread_rwlock_unlock(&pqLock);
         }
         //cout << "checking pq lock" << endl;
-        
+
         pthread_rwlock_wrlock(&pqLock);
         temp = pq.top();
         pq.pop();
@@ -308,15 +309,15 @@ void findSolution(gameState s){
 int main(){
     gameState arena;
     arena = formArena();
-    
+
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
-    
+
     start= chrono::system_clock::now();
-    
+
     findSolution(arena);
     cout << "ending the program" << endl;
-    
+
     end = chrono::system_clock::now();
     elapsed_time = end-start;
     cout << endl << "Time elapsed: " << elapsed_time.count() << endl << endl;
