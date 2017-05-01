@@ -39,7 +39,7 @@ const int lft = 8;
 const int down = 9;
 const int up = 10;
 
-const int max_threads = thread::hardware_concurrency();
+int max_threads = thread::hardware_concurrency();
 atomic_bool isfinished(false);
 vector<int> finalbt;
 
@@ -84,6 +84,51 @@ struct queueNode{
 typedef priority_queue<queueNode , vector<queueNode> ,greater<queueNode> > pqType;
 typedef set<histNode> hist_cont;
 
+
+gameState fetchArena(string fname){
+    vector<vector<int> > arena;
+    int player_exist = -1;
+    pair<int,int> player;
+
+    /*
+     * Text File Requirements:
+     * - All integers
+     * - First number should be height
+     * - Second number should be width
+     * - numbers should be separated by whitespace
+     * - Exactly one player must exist
+     * - Do NOT include the border walls outlining your puzzle
+     * - See "Types of Spaces" for what numbers to put for different spaces
+     */
+
+    fstream fin(fname, fstream::in);
+    if(!fin.is_open()){
+        cerr << "Invalid Text File" << endl;
+        exit(1);
+    }
+    int height, width,spot;
+    fin >> height >> width;
+    arena.resize(height);
+
+    for (int i = 0; i < height ; ++i){
+        for (int j = 0; j < width; ++j){
+            fin >> spot;
+            if(spot == 5 || spot == 6){
+                ++player_exist;
+                player = make_pair(i,j);
+                cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
+            }
+            arena.at(i).push_back(spot);
+        }
+    }
+    if(!player_exist){
+        return gameState(arena,player,width);
+    }
+    else{
+        cerr << "Player doesn't exist or more than one player";
+        return gameState();
+    }
+}
 
 
 gameState formArena(){
@@ -306,15 +351,24 @@ void findSolution(gameState s){
 
 
 
-int main(){
+int main(int argc, char* argv[]){
     gameState arena;
-    arena = formArena();
+    if(argc > 1){
+        arena = fetchArena(argv[1]);
+    }
+    else{
+        arena = formArena();
+    }
+    if(argc > 2){
+        max_threads = atoi(argv[2]);
+    }
+    
 
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
 
     start= chrono::system_clock::now();
-
+    
     findSolution(arena);
     cout << "ending the program" << endl;
 
