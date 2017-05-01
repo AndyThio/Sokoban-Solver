@@ -116,7 +116,7 @@ gameState fetchArena(string fname){
             if(spot == 5 || spot == 6){
                 ++player_exist;
                 player = make_pair(i,j);
-                cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
+                //cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
             }
             arena.at(i).push_back(spot);
         }
@@ -166,7 +166,7 @@ gameState formArena(){
             if(spot == 5 || spot == 6){
                 ++player_exist;
                 player = make_pair(i,j);
-                cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
+                //cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
             }
             arena.at(i).push_back(spot);
         }
@@ -335,9 +335,9 @@ void findSolution(gameState s){
         thd.push_back(thread(expandNode,temp,ref(alreadyseen),ref(pq)));
         //expandNode(temp,alreadyseen,pq);
     }
-    cout << "priting results" << endl;
+    //cout << "priting results" << endl;
     printBt(finalbt);
-    cout << "waiting for all threads to end" << endl;
+    //cout << "waiting for all threads to end" << endl;
     for(auto &e: thd){
         e.join();
     }
@@ -370,9 +370,9 @@ int main(int argc, char* argv[]){
     start= chrono::system_clock::now();
     
     findSolution(arena);
-    cout << "ending the program" << endl;
+    //cout << "ending the program" << endl;
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
-    cout << endl << "Time elapsed: " << elapsed_time.count() << endl << endl;
+    cout << "Time elapsed: " << elapsed_time.count() << endl;
 }
