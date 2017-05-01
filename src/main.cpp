@@ -13,6 +13,7 @@
 #include <atomic>
 #include <cassert>
 #include <chrono>
+#include <condition_variable>
 using namespace std;
 
 #include "gameState.h"
@@ -45,6 +46,11 @@ vector<int> finalbt;
 
 pthread_rwlock_t asLock;
 pthread_rwlock_t pqLock;
+
+condition_variable cpq;
+mutex cpqMut;
+
+mutex btMut;
 
 struct histNode{
     vector<bool> barrels;
@@ -207,88 +213,132 @@ bool isrepeat(const hist_cont &h, gameState c){
     return ret;
 }
 
-void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
+void expandNode(hist_cont &alreadyseen, pqType &pq){
     //cout << "allocating stuff" << endl;
-    gameState tempr = g.arena;
-    gameState templ = tempr;
-    gameState tempu = tempr;
-    gameState tempd = tempr;
-
-    //cout << "current depth" << temp.dept << endl;
-    //temp.arena.print();
-    //cout << endl;
-
-    //cout << "Moving right" << endl;
-    if(tempr.right() && !isrepeat(alreadyseen, tempr)){
-        pthread_rwlock_wrlock(&asLock);
-        alreadyseen.insert(histNode(tempr));
-        pthread_rwlock_unlock(&asLock);
-
-        if(tempr.isSolved()){
-            isfinished = true;
-            finalbt = tempr.getlastmove();
-            return;
-        }
-        int heurR = g.dept+1+tempr.getheur();
-        pthread_rwlock_wrlock(&pqLock);
-        pq.push(queueNode(tempr,g.dept+1,heurR));
+    bool pqempty;
+    queueNode temp;
+    chrono::milliseconds ms{100};
+    while(!isfinished){
+        //cout << "checking pq lock" << endl;
+        
+        
+        pthread_rwlock_rdlock(&pqLock);
+        pqempty = pq.empty();
         pthread_rwlock_unlock(&pqLock);
-    }
-    //cout << "Moving left" << endl;
-    if(templ.left() && !isrepeat(alreadyseen, templ)){
-        pthread_rwlock_wrlock(&asLock);
-        alreadyseen.insert(histNode(templ));
-        pthread_rwlock_unlock(&asLock);
-
-        if(templ.isSolved()){
-            isfinished = true;
-            finalbt = templ.getlastmove();
-            return;
+        
+        while(pqempty){
+            unique_lock<mutex> lk(cpqMut);
+            cpq.wait_for(lk,ms);
+            
+            if(isfinished){
+                return;
+            }
+            
+            pthread_rwlock_rdlock(&pqLock);
+            pqempty = pq.empty();
+            pthread_rwlock_unlock(&pqLock);
         }
-
-        int heurL = g.dept+1+templ.getheur();
+        
         pthread_rwlock_wrlock(&pqLock);
-        pq.push(queueNode(templ,g.dept+1,heurL));
+        temp = pq.top();
+        pq.pop();
         pthread_rwlock_unlock(&pqLock);
-    }
-    //cout << "Moving down" << endl;
-    if(tempd.down() && !isrepeat(alreadyseen, tempd)){
-        pthread_rwlock_wrlock(&asLock);
-        alreadyseen.insert(histNode(tempd));
-        pthread_rwlock_unlock(&asLock);
-
-        if(tempd.isSolved()){
-            isfinished = true;
-            finalbt = tempd.getlastmove();
-            return;
+            
+        gameState tempr = temp.arena;
+        gameState templ = tempr;
+        gameState tempu = tempr;
+        gameState tempd = tempr;
+    
+        //cout << "current depth" << temp.dept << endl;
+        //temp.arena.print();
+        //cout << endl;
+    
+        //cout << "Moving right" << endl;
+        if(tempr.right() && !isrepeat(alreadyseen, tempr)){
+            pthread_rwlock_wrlock(&asLock);
+            alreadyseen.insert(histNode(tempr));
+            pthread_rwlock_unlock(&asLock);
+    
+            if(tempr.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = tempr.getlastmove();
+                btMut.unlock();
+                return;
+            }
+            int heurR = temp.dept+1+tempr.getheur();
+            pthread_rwlock_wrlock(&pqLock);
+            pq.push(queueNode(tempr,temp.dept+1,heurR));
+            pthread_rwlock_unlock(&pqLock);
+            
+            cpq.notify_one();
         }
-
-        int heurD = g.dept+1+tempd.getheur();
-        pthread_rwlock_wrlock(&pqLock);
-        pq.push(queueNode(tempd,g.dept+1,heurD));
-        pthread_rwlock_unlock(&pqLock);
-    }
-    //cout << "Moving up" << endl;
-    if(tempu.up() && !isrepeat(alreadyseen, tempu)){
-        pthread_rwlock_wrlock(&asLock);
-        alreadyseen.insert(histNode(tempu));
-        pthread_rwlock_unlock(&asLock);
-
-        if(tempu.isSolved()){
-            isfinished = true;
-            finalbt = tempu.getlastmove();
-            return;
+        //cout << "Moving left" << endl;
+        if(templ.left() && !isrepeat(alreadyseen, templ)){
+            pthread_rwlock_wrlock(&asLock);
+            alreadyseen.insert(histNode(templ));
+            pthread_rwlock_unlock(&asLock);
+    
+            if(templ.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = templ.getlastmove();
+                btMut.unlock();
+                return;
+            }
+    
+            int heurL = temp.dept+1+templ.getheur();
+            pthread_rwlock_wrlock(&pqLock);
+            pq.push(queueNode(templ,temp.dept+1,heurL));
+            pthread_rwlock_unlock(&pqLock);
+            
+            cpq.notify_one();
         }
-
-        int heurU = g.dept+1+tempu.getheur();
-        pthread_rwlock_wrlock(&pqLock);
-        pq.push(queueNode(tempu,g.dept+1,heurU));
-        pthread_rwlock_unlock(&pqLock);
+        //cout << "Moving down" << endl;
+        if(tempd.down() && !isrepeat(alreadyseen, tempd)){
+            pthread_rwlock_wrlock(&asLock);
+            alreadyseen.insert(histNode(tempd));
+            pthread_rwlock_unlock(&asLock);
+    
+            if(tempd.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = tempd.getlastmove();
+                btMut.unlock();
+                return;
+            }
+    
+            int heurD = temp.dept+1+tempd.getheur();
+            pthread_rwlock_wrlock(&pqLock);
+            pq.push(queueNode(tempd,temp.dept+1,heurD));
+            pthread_rwlock_unlock(&pqLock);
+            
+            cpq.notify_one();
+        }
+        //cout << "Moving up" << endl;
+        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
+            pthread_rwlock_wrlock(&asLock);
+            alreadyseen.insert(histNode(tempu));
+            pthread_rwlock_unlock(&asLock);
+    
+            if(tempu.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = tempu.getlastmove();
+                btMut.unlock();
+                return;
+            }
+    
+            int heurU = temp.dept+1+tempu.getheur();
+            pthread_rwlock_wrlock(&pqLock);
+            pq.push(queueNode(tempu,temp.dept+1,heurU));
+            pthread_rwlock_unlock(&pqLock);
+            
+            cpq.notify_one();
+        }
+        //cout << "adding " << toAddpq.size() << endl;
+        //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
     }
-    //cout << "adding " << toAddpq.size() << endl;
-    //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
-
-    return;
 }
 
 //TODO: need to generate the vector int
@@ -300,43 +350,17 @@ void findSolution(gameState s){
     //could be just tracking barrels + positi
     hist_cont alreadyseen;
     queueNode temp = pq.top();
-    bool pqempty = false;
     //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
     //expandNode(temp,alreadyseen,pq);
     while(!isfinished){
-        //cout << "iter start" << endl;
-        //cout << "size of already: " << alreadyseen.size()<< endl;
-
-        //cout << thd.size() << endl;
-        //cout << "Number of max threds: " <<  max_threads << endl;
-
-        //while(pq.empty() || thd.size() > max_threads){
-        while(pqempty || thd.size() > max_threads){
-            for(auto it = thd.begin(); it < thd.end(); ++it){
-                if(it->joinable()){
-                    //cout << "stopping at join" << endl;
-                    it->join();
-                    //cout << "thread has been joined" << endl;
-                    thd.erase(it);
-                    //cout << "thread has been erased from vector, new size: " << thd.size() << endl;
-                }
-            }
-            pthread_rwlock_rdlock(&pqLock);
-            pqempty = pq.empty();
-            pthread_rwlock_unlock(&pqLock);
+        while(thd.size() < max_threads){
+            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
-        //cout << "checking pq lock" << endl;
-
-        pthread_rwlock_wrlock(&pqLock);
-        temp = pq.top();
-        pq.pop();
-        pqempty = pq.empty();
-        pthread_rwlock_unlock(&pqLock);
-        thd.push_back(thread(expandNode,temp,ref(alreadyseen),ref(pq)));
-        //expandNode(temp,alreadyseen,pq);
     }
     //cout << "priting results" << endl;
+    btMut.lock();
     printBt(finalbt);
+    btMut.unlock();
     //cout << "waiting for all threads to end" << endl;
     for(auto &e: thd){
         e.join();
