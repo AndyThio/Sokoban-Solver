@@ -1,0 +1,10 @@
+1.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=1640815960&level=10
+2.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=807561866&level=10
+3.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=928328603&level=10
+4.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=133222524&level=10
+5.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=19420713&level=10
+6.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=264954705&level=10
+7.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=275586224&level=10
+8.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=203821878&level=10
+9.txt       http://www.linusakesson.net/games/autosokoban/?v=1&seed=529544851&level=10
+10.txt      http://www.linusakesson.net/games/autosokoban/?v=1&seed=877914693&level=10
