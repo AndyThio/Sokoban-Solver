@@ -26,3 +26,7 @@ run-g: debug $(BIN)mainDebug.out
 
 bin:
 	mkdir -p $(BIN)
+
+clean:
+	rm main.o gameState.o
+	rm -r ../bin

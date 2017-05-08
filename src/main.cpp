@@ -363,10 +363,12 @@ int main(int argc, char* argv[]){
         max_threads = atoi(argv[2]);
     }
     
+    pthread_rwlock_init(&asLock, NULL);
+    pthread_rwlock_init(&pqLock, NULL);
 
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
-
+    
     start= chrono::system_clock::now();
     
     findSolution(arena);
