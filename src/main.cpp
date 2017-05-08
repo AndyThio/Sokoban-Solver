@@ -217,6 +217,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
     //cout << "allocating stuff" << endl;
     bool pqempty;
     queueNode temp;
+    bool filled = false;
     chrono::milliseconds ms{100};
     while(!isfinished){
         //cout << "checking pq lock" << endl;
@@ -224,6 +225,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         
         pthread_rwlock_rdlock(&pqLock);
         pqempty = pq.empty();
+        filled = true;
         pthread_rwlock_unlock(&pqLock);
         
         while(pqempty){
@@ -231,18 +233,26 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             cpq.wait_for(lk,ms);
             
             if(isfinished){
+                cout << "exiting" << endl;
                 return;
             }
             
-            pthread_rwlock_rdlock(&pqLock);
+            pthread_rwlock_wrlock(&pqLock);
             pqempty = pq.empty();
+            if(!pqempty){
+                temp = pq.top();
+                pq.pop();
+            }
             pthread_rwlock_unlock(&pqLock);
         }
         
-        pthread_rwlock_wrlock(&pqLock);
-        temp = pq.top();
-        pq.pop();
-        pthread_rwlock_unlock(&pqLock);
+        if(filled){
+            pthread_rwlock_wrlock(&pqLock);
+            temp = pq.top();
+            pq.pop();
+            pthread_rwlock_unlock(&pqLock);
+        }
+        
             
         gameState tempr = temp.arena;
         gameState templ = tempr;
@@ -264,6 +274,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempr.getlastmove();
                 btMut.unlock();
+                cout << "exiting" << endl;
                 return;
             }
             int heurR = temp.dept+1+tempr.getheur();
@@ -284,6 +295,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = templ.getlastmove();
                 btMut.unlock();
+                cout << "exiting" << endl;
                 return;
             }
     
@@ -305,6 +317,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempd.getlastmove();
                 btMut.unlock();
+                cout << "exiting" << endl;
                 return;
             }
     
@@ -326,6 +339,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempu.getlastmove();
                 btMut.unlock();
+                cout << "exiting" << endl;
                 return;
             }
     
@@ -339,6 +353,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         //cout << "adding " << toAddpq.size() << endl;
         //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
     }
+                cout << "exiting" << endl;
 }
 
 //TODO: need to generate the vector int
@@ -357,14 +372,16 @@ void findSolution(gameState s){
             thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
     }
-    //cout << "priting results" << endl;
-    btMut.lock();
-    printBt(finalbt);
-    btMut.unlock();
-    //cout << "waiting for all threads to end" << endl;
+    cout << "notifying solution has been found" << endl;
+    cpq.notify_all();
+    cout << "waiting for all threads to end" << endl;
     for(auto &e: thd){
         e.join();
     }
+    cout << "priting results" << endl;
+    btMut.lock();
+    printBt(finalbt);
+    btMut.unlock();
     //TODO: generate some kind of backtrace
 
 
@@ -387,9 +404,12 @@ int main(int argc, char* argv[]){
         max_threads = atoi(argv[2]);
     }
     
-
+    
+    pthread_rwlock_init(&pqLock, NULL);
+    pthread_rwlock_init(&asLock, NULL);
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
+    
 
     start= chrono::system_clock::now();
     
