@@ -45,7 +45,7 @@ atomic_bool isfinished(false);
 vector<int> finalbt;
 
 pthread_rwlock_t asLock;
-pthread_rwlock_t pqLock;
+mutex pqMut;
 
 condition_variable cpq;
 mutex cpqMut;
@@ -206,6 +206,7 @@ void printBt(vector<int> bt){
     }
     rfil.close();
 }
+
 bool isrepeat(const hist_cont &h, gameState c){
     pthread_rwlock_rdlock(&asLock);
     bool ret = h.find(histNode(c)) != h.end();
@@ -213,45 +214,41 @@ bool isrepeat(const hist_cont &h, gameState c){
     return ret;
 }
 
+
 void expandNode(hist_cont &alreadyseen, pqType &pq){
     //cout << "allocating stuff" << endl;
     bool pqempty;
     queueNode temp;
-    bool filled = false;
     chrono::milliseconds ms{100};
     while(!isfinished){
         //cout << "checking pq lock" << endl;
         
         
-        pthread_rwlock_rdlock(&pqLock);
+        pqMut.lock();
         pqempty = pq.empty();
-        filled = true;
-        pthread_rwlock_unlock(&pqLock);
+        if(!pqempty){
+            temp = pq.top();
+            pq.pop();
+        }
+        pqMut.unlock();
         
         while(pqempty){
             unique_lock<mutex> lk(cpqMut);
             cpq.wait_for(lk,ms);
             
             if(isfinished){
-                cout << "exiting" << endl;
                 return;
             }
             
-            pthread_rwlock_wrlock(&pqLock);
+            pqMut.lock();
             pqempty = pq.empty();
             if(!pqempty){
                 temp = pq.top();
                 pq.pop();
             }
-            pthread_rwlock_unlock(&pqLock);
+            pqMut.unlock();
         }
         
-        if(filled){
-            pthread_rwlock_wrlock(&pqLock);
-            temp = pq.top();
-            pq.pop();
-            pthread_rwlock_unlock(&pqLock);
-        }
         
             
         gameState tempr = temp.arena;
@@ -274,13 +271,12 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempr.getlastmove();
                 btMut.unlock();
-                cout << "exiting" << endl;
                 return;
             }
             int heurR = temp.dept+1+tempr.getheur();
-            pthread_rwlock_wrlock(&pqLock);
+            pqMut.lock();
             pq.push(queueNode(tempr,temp.dept+1,heurR));
-            pthread_rwlock_unlock(&pqLock);
+            pqMut.unlock();
             
             cpq.notify_one();
         }
@@ -295,14 +291,13 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = templ.getlastmove();
                 btMut.unlock();
-                cout << "exiting" << endl;
                 return;
             }
     
             int heurL = temp.dept+1+templ.getheur();
-            pthread_rwlock_wrlock(&pqLock);
+            pqMut.lock();
             pq.push(queueNode(templ,temp.dept+1,heurL));
-            pthread_rwlock_unlock(&pqLock);
+            pqMut.unlock();
             
             cpq.notify_one();
         }
@@ -317,14 +312,13 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempd.getlastmove();
                 btMut.unlock();
-                cout << "exiting" << endl;
                 return;
             }
     
             int heurD = temp.dept+1+tempd.getheur();
-            pthread_rwlock_wrlock(&pqLock);
+            pqMut.lock();
             pq.push(queueNode(tempd,temp.dept+1,heurD));
-            pthread_rwlock_unlock(&pqLock);
+            pqMut.unlock();
             
             cpq.notify_one();
         }
@@ -339,21 +333,19 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 btMut.lock();
                 finalbt = tempu.getlastmove();
                 btMut.unlock();
-                cout << "exiting" << endl;
                 return;
             }
     
             int heurU = temp.dept+1+tempu.getheur();
-            pthread_rwlock_wrlock(&pqLock);
+            pqMut.lock();
             pq.push(queueNode(tempu,temp.dept+1,heurU));
-            pthread_rwlock_unlock(&pqLock);
+            pqMut.unlock();
             
             cpq.notify_one();
         }
         //cout << "adding " << toAddpq.size() << endl;
         //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
     }
-                cout << "exiting" << endl;
 }
 
 //TODO: need to generate the vector int
@@ -372,13 +364,12 @@ void findSolution(gameState s){
             thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
     }
-    cout << "notifying solution has been found" << endl;
     cpq.notify_all();
-    cout << "waiting for all threads to end" << endl;
+    //cout << "waiting for all threads to end" << endl
     for(auto &e: thd){
         e.join();
     }
-    cout << "priting results" << endl;
+    //cout << "priting results" << endl;
     btMut.lock();
     printBt(finalbt);
     btMut.unlock();
@@ -405,7 +396,6 @@ int main(int argc, char* argv[]){
     }
     
     
-    pthread_rwlock_init(&pqLock, NULL);
     pthread_rwlock_init(&asLock, NULL);
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
