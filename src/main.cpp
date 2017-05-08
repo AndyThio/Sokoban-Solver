@@ -51,6 +51,7 @@ condition_variable cpq;
 mutex cpqMut;
 
 mutex btMut;
+mutex printMut;
 
 struct histNode{
     vector<bool> barrels;
@@ -212,11 +213,18 @@ bool isrepeat(const hist_cont &h, gameState c){
     return ret;
 }
 
-void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
+void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq,
+        chrono::duration<double> &astime, chrono::duration<double> &pqtime){
+    chrono::time_point<chrono::system_clock> pqstart, pqend;
+    chrono::time_point<chrono::system_clock> asstart, asend;
+    
         if(!isrepeat(alreadyseen, g)){
+            asstart = chrono::system_clock::now();
             pthread_rwlock_wrlock(&asLock);
             alreadyseen.insert(histNode(g));
             pthread_rwlock_unlock(&asLock);
+            asend = chrono::system_clock::now();
+            astime += asend - asstart;
     
             if(g.isSolved()){
                 isfinished = true;
@@ -226,20 +234,29 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
                 return;
             }
             int heur = parent_depth+1+g.getheur();
+            pqstart = chrono::system_clock::now();
             pqMut.lock();
             pq.push(queueNode(g,parent_depth+1,heur));
             pqMut.unlock();
+            pqend = chrono::system_clock::now();
+            pqtime += pqend - pqstart;
             
             cpq.notify_one();
         }
 }
 
 void expandNode(hist_cont &alreadyseen, pqType &pq){
+    chrono::time_point<chrono::system_clock> start, end;
+    chrono::time_point<chrono::system_clock> pqstart, pqend;
+    chrono::time_point<chrono::system_clock> asstart, asend;
+    chrono::duration<double> elapsed_time, astime , pqtime ;
     bool pqempty;
     queueNode temp;
     chrono::milliseconds ms{100};
     while(!isfinished){
+        start = chrono::system_clock::now();
         
+        pqstart = chrono::system_clock::now();
         pqMut.lock();
         pqempty = pq.empty();
         if(!pqempty){
@@ -247,15 +264,18 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             pq.pop();
         }
         pqMut.unlock();
+        pqend = chrono::system_clock::now();
+        pqtime += pqend - pqstart;
         
         while(pqempty){
             unique_lock<mutex> lk(cpqMut);
             cpq.wait_for(lk,ms);
             
             if(isfinished){
-                return;
+                break;
             }
             
+            pqstart = chrono::system_clock::now();
             pqMut.lock();
             pqempty = pq.empty();
             if(!pqempty){
@@ -263,6 +283,11 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
                 pq.pop();
             }
             pqMut.unlock();
+            pqend = chrono::system_clock::now();
+            pqtime += pqend - pqstart;
+        }
+        if(isfinished){
+            break;
         }
         
         gameState tempr = temp.arena;
@@ -271,18 +296,21 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         gameState tempd = tempr;
     
         if(tempr.right()){
-            expandDir(tempr,temp.dept, alreadyseen,pq);
+            expandDir(tempr,temp.dept, alreadyseen,pq,astime, pqtime);
         }
         if(templ.left()){
-            expandDir(templ,temp.dept, alreadyseen,pq);
+            expandDir(templ,temp.dept, alreadyseen,pq, astime, pqtime);
         }
         if(tempd.down()){
-            expandDir(tempd,temp.dept, alreadyseen,pq);
+            expandDir(tempd,temp.dept, alreadyseen,pq,astime, pqtime);
         }
         if(tempu.up()){
-            expandDir(tempu,temp.dept, alreadyseen,pq);
+            expandDir(tempu,temp.dept, alreadyseen,pq, astime, pqtime);
         }
     }
+    printMut.lock();
+    cout << pqtime.count() << " " << astime.count() << " ";
+    printMut.unlock();
 }
 
 void findSolution(gameState s){
@@ -313,6 +341,7 @@ void findSolution(gameState s){
 
 int main(int argc, char* argv[]){
     gameState arena;
+    bool verb = false;
     if(argc > 1){
         arena = fetchArena(argv[1]);
     }
@@ -335,5 +364,4 @@ int main(int argc, char* argv[]){
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
-    cout << "Time elapsed: " << elapsed_time.count() << endl;
 }
