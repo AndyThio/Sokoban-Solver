@@ -122,7 +122,6 @@ gameState fetchArena(string fname){
             if(spot == 5 || spot == 6){
                 ++player_exist;
                 player = make_pair(i,j);
-                //cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
             }
             arena.at(i).push_back(spot);
         }
@@ -172,7 +171,6 @@ gameState formArena(){
             if(spot == 5 || spot == 6){
                 ++player_exist;
                 player = make_pair(i,j);
-                //cout << "Player Coordinates: " << player.first <<", " << player.second << endl;
             }
             arena.at(i).push_back(spot);
         }
@@ -214,15 +212,33 @@ bool isrepeat(const hist_cont &h, gameState c){
     return ret;
 }
 
+void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
+        if(!isrepeat(alreadyseen, g)){
+            pthread_rwlock_wrlock(&asLock);
+            alreadyseen.insert(histNode(g));
+            pthread_rwlock_unlock(&asLock);
+    
+            if(g.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = g.getlastmove();
+                btMut.unlock();
+                return;
+            }
+            int heur = parent_depth+1+g.getheur();
+            pqMut.lock();
+            pq.push(queueNode(g,parent_depth+1,heur));
+            pqMut.unlock();
+            
+            cpq.notify_one();
+        }
+}
 
 void expandNode(hist_cont &alreadyseen, pqType &pq){
-    //cout << "allocating stuff" << endl;
     bool pqempty;
     queueNode temp;
     chrono::milliseconds ms{100};
     while(!isfinished){
-        //cout << "checking pq lock" << endl;
-        
         
         pqMut.lock();
         pqempty = pq.empty();
@@ -249,139 +265,51 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             pqMut.unlock();
         }
         
-        
-            
         gameState tempr = temp.arena;
         gameState templ = tempr;
         gameState tempu = tempr;
         gameState tempd = tempr;
     
-        //cout << "current depth" << temp.dept << endl;
-        //temp.arena.print();
-        //cout << endl;
-    
-        //cout << "Moving right" << endl;
-        if(tempr.right() && !isrepeat(alreadyseen, tempr)){
-            pthread_rwlock_wrlock(&asLock);
-            alreadyseen.insert(histNode(tempr));
-            pthread_rwlock_unlock(&asLock);
-    
-            if(tempr.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = tempr.getlastmove();
-                btMut.unlock();
-                return;
-            }
-            int heurR = temp.dept+1+tempr.getheur();
-            pqMut.lock();
-            pq.push(queueNode(tempr,temp.dept+1,heurR));
-            pqMut.unlock();
-            
-            cpq.notify_one();
+        if(tempr.right()){
+            expandDir(tempr,temp.dept, alreadyseen,pq);
         }
-        //cout << "Moving left" << endl;
-        if(templ.left() && !isrepeat(alreadyseen, templ)){
-            pthread_rwlock_wrlock(&asLock);
-            alreadyseen.insert(histNode(templ));
-            pthread_rwlock_unlock(&asLock);
-    
-            if(templ.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = templ.getlastmove();
-                btMut.unlock();
-                return;
-            }
-    
-            int heurL = temp.dept+1+templ.getheur();
-            pqMut.lock();
-            pq.push(queueNode(templ,temp.dept+1,heurL));
-            pqMut.unlock();
-            
-            cpq.notify_one();
+        if(templ.left()){
+            expandDir(templ,temp.dept, alreadyseen,pq);
         }
-        //cout << "Moving down" << endl;
-        if(tempd.down() && !isrepeat(alreadyseen, tempd)){
-            pthread_rwlock_wrlock(&asLock);
-            alreadyseen.insert(histNode(tempd));
-            pthread_rwlock_unlock(&asLock);
-    
-            if(tempd.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = tempd.getlastmove();
-                btMut.unlock();
-                return;
-            }
-    
-            int heurD = temp.dept+1+tempd.getheur();
-            pqMut.lock();
-            pq.push(queueNode(tempd,temp.dept+1,heurD));
-            pqMut.unlock();
-            
-            cpq.notify_one();
+        if(tempd.down()){
+            expandDir(tempd,temp.dept, alreadyseen,pq);
         }
-        //cout << "Moving up" << endl;
-        if(tempu.up() && !isrepeat(alreadyseen, tempu)){
-            pthread_rwlock_wrlock(&asLock);
-            alreadyseen.insert(histNode(tempu));
-            pthread_rwlock_unlock(&asLock);
-    
-            if(tempu.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = tempu.getlastmove();
-                btMut.unlock();
-                return;
-            }
-    
-            int heurU = temp.dept+1+tempu.getheur();
-            pqMut.lock();
-            pq.push(queueNode(tempu,temp.dept+1,heurU));
-            pqMut.unlock();
-            
-            cpq.notify_one();
+        if(tempu.up()){
+            expandDir(tempu,temp.dept, alreadyseen,pq);
         }
-        //cout << "adding " << toAddpq.size() << endl;
-        //TODO: Check speed if you make it so that all nodes are added at once, reducing 3 locks to 1
     }
 }
 
-//TODO: need to generate the vector int
 void findSolution(gameState s){
     pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
     vector<thread> thd;
     gameState finishedState;
-    //could be just tracking barrels + positi
     hist_cont alreadyseen;
+    
     queueNode temp = pq.top();
-    //thd.push_back(thread(expandNode,cref(temp),ref(alreadyseen),ref(pq)));
-    //expandNode(temp,alreadyseen,pq);
+    
     while(!isfinished){
         while(thd.size() < max_threads){
             thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
     }
+    
     cpq.notify_all();
-    //cout << "waiting for all threads to end" << endl
+    
     for(auto &e: thd){
         e.join();
     }
-    //cout << "priting results" << endl;
+    
     btMut.lock();
     printBt(finalbt);
     btMut.unlock();
-    //TODO: generate some kind of backtrace
-
-
 }
-
-
-
-
-
 
 int main(int argc, char* argv[]){
     gameState arena;
@@ -404,7 +332,6 @@ int main(int argc, char* argv[]){
     start= chrono::system_clock::now();
     
     findSolution(arena);
-    //cout << "ending the program" << endl;
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
