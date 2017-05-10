@@ -206,10 +206,14 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 
-bool isrepeat(const hist_cont &h, gameState c){
+bool isrepeat(const hist_cont &h, gameState c, chrono::duration<double> &astime){
+    chrono::time_point<chrono::system_clock> asstart, asend;
+    asstart = chrono::system_clock::now();
     pthread_rwlock_rdlock(&asLock);
+    asend = chrono::system_clock::now();
     bool ret = h.find(histNode(c)) != h.end();
     pthread_rwlock_unlock(&asLock);
+    astime += asend - asstart;
     return ret;
 }
 
@@ -218,12 +222,12 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
     chrono::time_point<chrono::system_clock> pqstart, pqend;
     chrono::time_point<chrono::system_clock> asstart, asend;
     
-        if(!isrepeat(alreadyseen, g)){
+        if(!isrepeat(alreadyseen, g, astime)){
             asstart = chrono::system_clock::now();
             pthread_rwlock_wrlock(&asLock);
+            asend = chrono::system_clock::now();
             alreadyseen.insert(histNode(g));
             pthread_rwlock_unlock(&asLock);
-            asend = chrono::system_clock::now();
             astime += asend - asstart;
     
             if(g.isSolved()){
@@ -236,9 +240,9 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
             int heur = parent_depth+1+g.getheur();
             pqstart = chrono::system_clock::now();
             pqMut.lock();
+            pqend = chrono::system_clock::now();
             pq.push(queueNode(g,parent_depth+1,heur));
             pqMut.unlock();
-            pqend = chrono::system_clock::now();
             pqtime += pqend - pqstart;
             
             cpq.notify_one();
@@ -258,13 +262,13 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         
         pqstart = chrono::system_clock::now();
         pqMut.lock();
+        pqend = chrono::system_clock::now();
         pqempty = pq.empty();
         if(!pqempty){
             temp = pq.top();
             pq.pop();
         }
         pqMut.unlock();
-        pqend = chrono::system_clock::now();
         pqtime += pqend - pqstart;
         
         while(pqempty){
@@ -277,13 +281,13 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             
             pqstart = chrono::system_clock::now();
             pqMut.lock();
+            pqend = chrono::system_clock::now();
             pqempty = pq.empty();
             if(!pqempty){
                 temp = pq.top();
                 pq.pop();
             }
             pqMut.unlock();
-            pqend = chrono::system_clock::now();
             pqtime += pqend - pqstart;
         }
         if(isfinished){
@@ -308,8 +312,10 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             expandDir(tempu,temp.dept, alreadyseen,pq, astime, pqtime);
         }
     }
+    end = chrono::system_clock::now();
+    elapsed_time = end - start;
     printMut.lock();
-    cout << pqtime.count() << " " << astime.count() << " ";
+    cout << elapsed_time.count() << ", " << pqtime.count() << ", " << astime.count() << ", ";
     printMut.unlock();
 }
 
@@ -364,4 +370,5 @@ int main(int argc, char* argv[]){
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
+    cout << elapsed_time.count() << endl;
 }
