@@ -370,5 +370,8 @@ int main(int argc, char* argv[]){
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
+    for(int i = max_threads; i < 15; ++i){
+        cout << "-1, -1, -1,";
+    }
     cout << elapsed_time.count() << endl;
 }
