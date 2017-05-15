@@ -14,6 +14,8 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <cmath>
+#include <algorithm>
 using namespace std;
 
 #include "gameState.h"
@@ -90,6 +92,7 @@ struct queueNode{
 
 typedef priority_queue<queueNode , vector<queueNode> ,greater<queueNode> > pqType;
 typedef set<histNode> hist_cont;
+typedef vector<chrono::duration<double> > timecont;
 
 
 gameState fetchArena(string fname){
@@ -206,32 +209,69 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 
-bool isrepeat(const hist_cont &h, gameState c, chrono::duration<double> &astime_r, unsigned int &asrc){
+bool isrepeat(const hist_cont &h, gameState c, chrono::duration<double> &astime_r,
+        unsigned int &asrc, chrono::duration<double> &histtime, unsigned int &histc,
+        timecont &asrv, timecont &hv, timecont &findv, chrono::duration<double> &findt,
+        unsigned int &findc){
     chrono::time_point<chrono::system_clock> asstart, asend;
+    chrono::time_point<chrono::system_clock> hstart, hend;
+    chrono::time_point<chrono::system_clock> fstart, fend;
     ++asrc;
+    ++histc;
+    ++findc;
     asstart = chrono::system_clock::now();
     pthread_rwlock_rdlock(&asLock);
     asend = chrono::system_clock::now();
-    bool ret = h.find(histNode(c)) != h.end();
+    hstart = chrono::system_clock::now();
+    auto temp = histNode(c);
+    hend = chrono::system_clock::now();
+    fstart = chrono::system_clock::now();
+    bool ret = h.find(temp) != h.end();
+    fend = chrono::system_clock::now();
     pthread_rwlock_unlock(&asLock);
     astime_r += asend - asstart;
+    histtime += hend - hstart;
+    findt += fend - fstart;
+    asrv.push_back(asend-asstart);
+    hv.push_back(hend-hstart);
+    findv.push_back(fend - fstart);
     return ret;
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq,
         chrono::duration<double> &astime_w,chrono::duration<double> &astime_r,
-        chrono::duration<double> &pqtime, unsigned int &asrc, unsigned int &aswc, unsigned int &pqc){
+        chrono::duration<double> &pqtime, unsigned int &asrc, unsigned int &aswc, unsigned int &pqc,
+        chrono::duration<double> &histtime, unsigned int &histc,timecont &pqv, timecont &aswv,
+        timecont &asrv, timecont &hv, timecont &findv, timecont &insertv,
+        chrono::duration<double> &insertt, chrono::duration<double> &findt, unsigned int &insertc,
+        unsigned int &findc){
     chrono::time_point<chrono::system_clock> pqstart, pqend;
     chrono::time_point<chrono::system_clock> asstart, asend;
+    chrono::time_point<chrono::system_clock> hstart, hend;
+    chrono::time_point<chrono::system_clock> istart, iend;
 
-        if(!isrepeat(alreadyseen, g, astime_r, asrc)){
+        if(!isrepeat(alreadyseen, g, astime_r, asrc, histtime, histc, asrv, hv, findv, findt, findc)){
             ++aswc;
+            ++histc;
+            ++insertc;
             asstart = chrono::system_clock::now();
             pthread_rwlock_wrlock(&asLock);
             asend = chrono::system_clock::now();
-            alreadyseen.insert(histNode(g));
+            hstart = chrono::system_clock::now();
+            auto histtemp = histNode(g);
+            hend = chrono::system_clock::now();
+
+            istart = chrono::system_clock::now();
+            alreadyseen.insert(histtemp);
+            iend = chrono::system_clock::now();
+
             pthread_rwlock_unlock(&asLock);
             astime_w += asend - asstart;
+            histtime += hend - hstart;
+            insertt += iend - istart;
+            aswv.push_back(asend-asstart);
+            hv.push_back(hend- hstart);
+            insertv.push_back(iend - istart);
 
             if(g.isSolved()){
                 isfinished = true;
@@ -248,17 +288,35 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
             pq.push(queueNode(g,parent_depth+1,heur));
             pqMut.unlock();
             pqtime += pqend - pqstart;
+            pqv.push_back(pqend-pqstart);
 
             cpq.notify_one();
         }
+}
+
+double stddev(vector<chrono::duration<double> > x, double mean){
+    double meansum = 0;
+    for(auto &e: x){
+        meansum+= (e.count()-mean) * (e.count()-mean);
+    }
+    return sqrt(meansum/x.size());
+}
+
+double mini(const timecont &x){
+    return min_element(x.begin(), x.end())->count();
+}
+
+double maxi(const timecont &x){
+    return max_element(x.begin(), x.end())->count();
 }
 
 void expandNode(hist_cont &alreadyseen, pqType &pq){
     chrono::time_point<chrono::system_clock> start, end;
     chrono::time_point<chrono::system_clock> pqstart, pqend;
     chrono::time_point<chrono::system_clock> asstart, asend;
-    chrono::duration<double> elapsed_time, astime_w, astime_r , pqtime ;
-    unsigned int asrc = 0,aswc = 0, pqc = 0;
+    chrono::duration<double> elapsed_time, astime_w, astime_r , pqtime, histtime,insertt,findt;
+    timecont aswv, asrv, pqv, hv, insertv, findv;
+    unsigned int asrc = 0,aswc = 0, pqc = 0, histc = 0, insertc =0, findc = 0;
     bool pqempty;
     queueNode temp;
     chrono::milliseconds ms{100};
@@ -276,6 +334,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         }
         pqMut.unlock();
         pqtime += pqend - pqstart;
+        pqv.push_back(pqend-pqstart);
 
         while(pqempty){
             unique_lock<mutex> lk(cpqMut);
@@ -295,6 +354,7 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
             }
             pqMut.unlock();
             pqtime += pqend - pqstart;
+            pqv.push_back(pqend-pqstart);
         }
         if(isfinished){
             break;
@@ -306,25 +366,42 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         gameState tempd = tempr;
 
         if(tempr.right()){
-            expandDir(tempr,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc);
+            expandDir(tempr,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc,
+                    histtime, histc, pqv, aswv, asrv, hv, findv, insertv, insertt, findt, insertc,
+                    findc);
         }
         if(templ.left()){
-            expandDir(templ,temp.dept, alreadyseen,pq, astime_w, astime_r, pqtime, asrc, aswc, pqc);
+            expandDir(templ,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc,
+                    histtime, histc, pqv, aswv, asrv, hv, findv, insertv, insertt, findt, insertc,
+                    findc);
         }
         if(tempd.down()){
-            expandDir(tempd,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc);
+            expandDir(tempd,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc,
+                    histtime, histc, pqv, aswv, asrv, hv, findv, insertv, insertt, findt, insertc,
+                    findc);
         }
         if(tempu.up()){
-            expandDir(tempu,temp.dept, alreadyseen,pq, astime_w, astime_r, pqtime, asrc, aswc, pqc);
+            expandDir(tempu,temp.dept, alreadyseen,pq,astime_w, astime_r, pqtime, asrc, aswc, pqc,
+                    histtime, histc, pqv, aswv, asrv, hv, findv, insertv, insertt, findt, insertc,
+                    findc);
         }
     }
     end = chrono::system_clock::now();
     elapsed_time = end - start;
+
     printMut.lock();
     //thread time, pqtime, avgper pq, as write, avg as write, as read, avg asread
     cout << elapsed_time.count() << ", " << pqtime.count() << ", " << pqtime.count()/pqc << ", "
-        << astime_w.count() << ", " << astime_w.count()/aswc << ", " << astime_r.count() << ", "
-        << astime_r.count()/asrc << ", ";
+        << stddev(pqv, pqtime.count()/pqc) << ", " << mini(pqv) << ", " << maxi(pqv) << ", "
+        << astime_w.count() << ", " << astime_w.count()/aswc << ", "
+        << stddev(aswv, astime_w.count()/aswc) << ", " << mini(aswv) << ", " << maxi(aswv) << ", "
+        << astime_r.count() << ", "  << astime_r.count()/asrc << ", "
+        << stddev(asrv, astime_r.count()/asrc) << ", "  << mini(asrv) << ", " << maxi(asrv)
+        << ", "<< histtime.count() << ", "
+        << histtime.count()/histc << ", " << stddev(hv, histtime.count()/histc) << ","
+        << mini(hv) << ", " << maxi(hv) << ", " << insertt.count() << ", " << insertt.count()/insertc << ", "
+        << stddev(insertv, insertt.count()/insertc) << ", " << mini(insertv) << ", " << maxi(insertv) << ", " << findt.count() << ", "
+        << findt.count()/findc << ", " << stddev(findv, findt.count()/findc) << ", " << mini(findv) << ", " << maxi(findv) << ", " ;
     printMut.unlock();
 }
 
@@ -380,7 +457,9 @@ int main(int argc, char* argv[]){
     end = chrono::system_clock::now();
     elapsed_time = end-start;
     for(int i = max_threads; i < 15; ++i){
-        cout << "-1, -1, -1,";
+        for( int j = 0; j < 31; ++j){
+            cout << "-1, ";
+        }
     }
     cout << elapsed_time.count() << endl;
 }
