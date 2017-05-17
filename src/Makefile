@@ -6,7 +6,7 @@ OBJS = main.o gameState.o
 CFLAGS = -c -std=c++11 -pthread
 OFLAGS = -std=c++11 -pthread
 
-all: bin $(OBJS) 
+all: bin $(OBJS)
 	$(CC) $(OFLAGS) $(OBJS) -o $(BIN)main.out
 
 main.o: main.cpp gameState.h | bin
@@ -15,8 +15,15 @@ main.o: main.cpp gameState.h | bin
 gameState.o: gameState.h gameState.cpp | bin
 	$(CC) $(CFLAGS) gameState.cpp -o gameState.o
 
+check.o: check.cpp gameState.h | bin
+	$(CC) $(CFLAGS) check.cpp -o check.o
+
 debug: $(OBJS)
 	$(CC) $(OFLAGS) $(DEBUG) $(OBJS) -o $(BIN)mainDebug.out
+
+test: bin $(OBJS) check.o
+	$(CC) $(OFLAGS) $(OBJS) -o $(BIN)main.out
+	$(CC) $(OFLAGS) check.o gameState.o -o $(BIN)check.out
 
 run: all $(BIN)main.out
 	$(BIN)main.out
