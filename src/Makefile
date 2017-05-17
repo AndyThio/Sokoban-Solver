@@ -24,6 +24,9 @@ run: all $(BIN)main.out
 run-g: debug $(BIN)mainDebug.out
 	$(DEBUGGER) $(BIN)mainDebug.out
 
+run-test: all $(BIN)main.out
+	$(BIN)main.out ../data/autosokoban/15/1.txt
+
 bin:
 	mkdir -p $(BIN)
 

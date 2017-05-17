@@ -41,10 +41,11 @@ const int down = 9;
 const int up = 10;
 
 int max_threads = thread::hardware_concurrency();
+int num_locks = 4;
 atomic_bool isfinished(false);
 vector<int> finalbt;
 
-pthread_rwlock_t asLock;
+vector<pthread_rwlock_t> asLock;
 mutex pqMut;
 
 condition_variable cpq;
@@ -88,7 +89,7 @@ struct queueNode{
 
 
 typedef priority_queue<queueNode , vector<queueNode> ,greater<queueNode> > pqType;
-typedef set<histNode> hist_cont;
+typedef vector<set<histNode>> hist_cont;
 
 
 gameState fetchArena(string fname){
@@ -205,18 +206,20 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 
-bool isrepeat(const hist_cont &h, gameState c){
-    pthread_rwlock_rdlock(&asLock);
-    bool ret = h.find(histNode(c)) != h.end();
-    pthread_rwlock_unlock(&asLock);
+bool isrepeat(const hist_cont &h, gameState c, const unsigned int hashnum){
+    auto temp = histNode(c);
+    pthread_rwlock_rdlock(&asLock.at(hashnum));
+    bool ret = h.at(hashnum).find(temp) != h.at(hashnum).end();
+    pthread_rwlock_unlock(&asLock.at(hashnum));
     return ret;
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
-        if(!isrepeat(alreadyseen, g)){
-            pthread_rwlock_wrlock(&asLock);
-            alreadyseen.insert(histNode(g));
-            pthread_rwlock_unlock(&asLock);
+        unsigned int hashnum = g.getplayerhash(num_locks);
+        if(!isrepeat(alreadyseen, g, hashnum)){
+            pthread_rwlock_wrlock(&asLock.at(hashnum));
+            alreadyseen.at(hashnum).insert(histNode(g));
+            pthread_rwlock_unlock(&asLock.at(hashnum));
     
             if(g.isSolved()){
                 isfinished = true;
@@ -290,7 +293,7 @@ void findSolution(gameState s){
     pq.push(queueNode(s, 0, s.getheur()));
     vector<thread> thd;
     gameState finishedState;
-    hist_cont alreadyseen;
+    hist_cont alreadyseen(num_locks);
     
     queueNode temp = pq.top();
     
@@ -322,9 +325,16 @@ int main(int argc, char* argv[]){
     if(argc > 2){
         max_threads = atoi(argv[2]);
     }
+    if(argc > 3){
+        num_locks = atoi(argv[3]);
+    }
+    asLock.resize(num_locks);
     
-    
-    pthread_rwlock_init(&asLock, NULL);
+    cout << "num_locks = " << num_locks << endl;
+    cout << "size of as" << asLock.size() << endl;
+    for(auto &e: asLock){
+        pthread_rwlock_init(&e, NULL);
+    }
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
     
