@@ -25,7 +25,7 @@ run-g: debug $(BIN)mainDebug.out
 	$(DEBUGGER) $(BIN)mainDebug.out
 
 run-test: all $(BIN)main.out
-	$(BIN)main.out ../data/autosokoban/15/1.txt
+	$(BIN)main.out ../data/autosokoban/15/1.txt 8 1
 
 bin:
 	mkdir -p $(BIN)

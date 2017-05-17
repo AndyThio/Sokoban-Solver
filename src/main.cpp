@@ -40,6 +40,8 @@ const int lft = 8;
 const int down = 9;
 const int up = 10;
 
+int hashType = 0;
+
 int max_threads = thread::hardware_concurrency();
 int num_locks = 4;
 atomic_bool isfinished(false);
@@ -215,7 +217,16 @@ bool isrepeat(const hist_cont &h, gameState c, const unsigned int hashnum){
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
-        unsigned int hashnum = g.getplayerhash(num_locks);
+        unsigned int hashnum = 0;
+        switch(hashType){
+            case 0: hashnum = g.getplayerhash(num_locks);
+                    break;
+            case 1: hashnum = g.getbarrelhash(num_locks);
+                    break;
+            default: hashnum = 0;
+                    break;
+        }
+        
         if(!isrepeat(alreadyseen, g, hashnum)){
             pthread_rwlock_wrlock(&asLock.at(hashnum));
             alreadyseen.at(hashnum).insert(histNode(g));
@@ -323,15 +334,22 @@ int main(int argc, char* argv[]){
         arena = formArena();
     }
     if(argc > 2){
-        max_threads = atoi(argv[2]);
+        int thread_count_temp = atoi(argv[2]);
+        if(thread_count_temp > 0){
+            max_threads = thread_count_temp;
+        }
     }
     if(argc > 3){
-        num_locks = atoi(argv[3]);
+        hashType = atoi(argv[3]);
+    }
+    if(argc > 4){
+        int num_locks_temp = atoi(argv[4]);
+        if(num_locks_temp > 0){
+            num_locks = num_locks_temp;
+        }
     }
     asLock.resize(num_locks);
     
-    cout << "num_locks = " << num_locks << endl;
-    cout << "size of as" << asLock.size() << endl;
     for(auto &e: asLock){
         pthread_rwlock_init(&e, NULL);
     }
