@@ -27,7 +27,8 @@ struct gameState{
         int getheur();
         std::vector<int> getlastmove();
         bool isequal(const gameState s);
-        size_t gethash();
+        unsigned int getplayerhash(int k);
+        unsigned int getbarrelhash(int k);
     //private:
         bool updateArena(std::pair<int,int> move);
 };

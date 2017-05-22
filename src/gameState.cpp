@@ -255,6 +255,13 @@ bool gameState::isequal(const gameState m){
     }
     return true;
 }
+unsigned int gameState::getplayerhash(int k){
+    return (width*position.first + position.second)%k;
+}
+
+unsigned int gameState::getbarrelhash(int k){
+    return ((unsigned int)std::hash<std::vector<bool> >{}(barrels))%k;
+}
 /*
 size_t gameState::gethash(){
     return std::hash<std::vector<bool> > {}(barrels) ^ ( std::hash<std::pair<int,int> > {} (position) << 1);
