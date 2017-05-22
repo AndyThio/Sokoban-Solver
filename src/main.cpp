@@ -216,12 +216,15 @@ bool isrepeat(const hist_cont &h, gameState c, const unsigned int hashnum){
     return ret;
 }
 
-void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
+void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq,
+            const int id){
         unsigned int hashnum = 0;
         switch(hashType){
             case 0: hashnum = g.getplayerhash(num_locks);
                     break;
             case 1: hashnum = g.getbarrelhash(num_locks);
+                    break;
+            case 2: hashnum = id%num_locks;
                     break;
             default: hashnum = 0;
                     break;
@@ -248,7 +251,7 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
         }
 }
 
-void expandNode(hist_cont &alreadyseen, pqType &pq){
+void expandNode(hist_cont &alreadyseen, pqType &pq, const int id){
     bool pqempty;
     queueNode temp;
     chrono::milliseconds ms{100};
@@ -285,16 +288,16 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         gameState tempd = tempr;
     
         if(tempr.right()){
-            expandDir(tempr,temp.dept, alreadyseen,pq);
+            expandDir(tempr,temp.dept, alreadyseen,pq, id);
         }
         if(templ.left()){
-            expandDir(templ,temp.dept, alreadyseen,pq);
+            expandDir(templ,temp.dept, alreadyseen,pq, id);
         }
         if(tempd.down()){
-            expandDir(tempd,temp.dept, alreadyseen,pq);
+            expandDir(tempd,temp.dept, alreadyseen,pq, id);
         }
         if(tempu.up()){
-            expandDir(tempu,temp.dept, alreadyseen,pq);
+            expandDir(tempu,temp.dept, alreadyseen,pq, id);
         }
     }
 }
@@ -305,12 +308,14 @@ void findSolution(gameState s){
     vector<thread> thd;
     gameState finishedState;
     hist_cont alreadyseen(num_locks);
+    int id = 0;
     
     queueNode temp = pq.top();
     
     while(!isfinished){
         while(thd.size() < max_threads){
-            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
+            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq), id));
+            ++id;
         }
     }
     
