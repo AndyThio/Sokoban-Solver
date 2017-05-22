@@ -578,10 +578,6 @@ void expandNode_l(pqType &pq){
     //thread time, pqtime, avgper pq, as write, avg as write, as read, avg asread
     cout << elapsed_time.count() << ", " << pqtime.count() << ", " << pqtime.count()/pqc << ", "
         << stddev(pqv, pqtime.count()/pqc) << ", " << mini(pqv) << ", " << maxi(pqv) << ", "
-        << astime_w.count() << ", " << astime_w.count()/aswc << ", "
-        << stddev(aswv, astime_w.count()/aswc) << ", " << mini(aswv) << ", " << maxi(aswv) << ", "
-        << astime_r.count() << ", "  << astime_r.count()/asrc << ", "
-        << stddev(asrv, astime_r.count()/asrc) << ", "  << mini(asrv) << ", " << maxi(asrv)
         << ", "<< histtime.count() << ", "
         << histtime.count()/histc << ", " << stddev(hv, histtime.count()/histc) << ","
         << mini(hv) << ", " << maxi(hv) << ", " << insertt.count() << ", " << insertt.count()/insertc << ", "
@@ -666,9 +662,18 @@ int main(int argc, char* argv[]){
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
-    for(int i = max_threads; i < 15; ++i){
-        for( int j = 0; j < 31; ++j){
-            cout << "-1, ";
+    if(hashType == 3){
+        for(int i = max_threads; i < 15; ++i){
+            for( int j = 0; j < 20; ++j){
+                cout << "-1, ";
+            }
+        }
+    }
+    else{
+        for(int i = max_threads; i < 15; ++i){
+            for( int j = 0; j < 31; ++j){
+                cout << "-1, ";
+            }
         }
     }
     cout << elapsed_time.count() << endl;
