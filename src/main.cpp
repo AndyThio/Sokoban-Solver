@@ -92,6 +92,7 @@ struct queueNode{
 
 typedef priority_queue<queueNode , vector<queueNode> ,greater<queueNode> > pqType;
 typedef vector<set<histNode>> hist_cont;
+typedef set<histNode> hist_cont_l;
 
 
 gameState fetchArena(string fname){
@@ -302,6 +303,84 @@ void expandNode(hist_cont &alreadyseen, pqType &pq, const int id){
     }
 }
 
+bool isrepeat_l(const hist_cont_l &h, gameState c){
+    auto temp = histNode(c);
+    bool ret = h.find(temp) != h.end();
+    return ret;
+}
+
+void expandDir_l(gameState g, int parent_depth, hist_cont_l &alreadyseen, pqType &pq){
+        if(!isrepeat_l(alreadyseen, g)){
+            alreadyseen.insert(histNode(g));
+    
+            if(g.isSolved()){
+                isfinished = true;
+                btMut.lock();
+                finalbt = g.getlastmove();
+                btMut.unlock();
+                return;
+            }
+            int heur = parent_depth+1+g.getheur();
+            pqMut.lock();
+            pq.push(queueNode(g,parent_depth+1,heur));
+            pqMut.unlock();
+            
+            cpq.notify_one();
+        }
+}
+
+void expandNode_l(pqType &pq){
+    bool pqempty;
+    hist_cont_l alreadyseen;
+    queueNode temp;
+    chrono::milliseconds ms{100};
+    while(!isfinished){
+        
+        pqMut.lock();
+        pqempty = pq.empty();
+        if(!pqempty){
+            temp = pq.top();
+            pq.pop();
+        }
+        pqMut.unlock();
+        
+        while(pqempty){
+            unique_lock<mutex> lk(cpqMut);
+            cpq.wait_for(lk,ms);
+            
+            if(isfinished){
+                return;
+            }
+            
+            pqMut.lock();
+            pqempty = pq.empty();
+            if(!pqempty){
+                temp = pq.top();
+                pq.pop();
+            }
+            pqMut.unlock();
+        }
+        
+        gameState tempr = temp.arena;
+        gameState templ = tempr;
+        gameState tempu = tempr;
+        gameState tempd = tempr;
+    
+        if(tempr.right()){
+            expandDir_l(tempr,temp.dept, alreadyseen,pq);
+        }
+        if(templ.left()){
+            expandDir_l(templ,temp.dept, alreadyseen,pq);
+        }
+        if(tempd.down()){
+            expandDir_l(tempd,temp.dept, alreadyseen,pq);
+        }
+        if(tempu.up()){
+            expandDir_l(tempu,temp.dept, alreadyseen,pq);
+        }
+    }
+}
+
 void findSolution(gameState s){
     pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
@@ -311,11 +390,19 @@ void findSolution(gameState s){
     int id = 0;
     
     queueNode temp = pq.top();
-    
-    while(!isfinished){
-        while(thd.size() < max_threads){
-            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq), id));
-            ++id;
+    if(hashType == 3){
+        while(!isfinished){
+            while(thd.size() < max_threads){
+                thd.push_back(thread(expandNode_l,ref(pq)));
+            }
+        }
+    }
+    else{
+        while(!isfinished){
+            while(thd.size() < max_threads){
+                thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq), id));
+                ++id;
+            }
         }
     }
     
