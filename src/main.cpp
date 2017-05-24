@@ -293,6 +293,8 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
 
 //TODO: need to generate the vector int
 void findSolution(gameState s){
+    chrono::time_point<chrono::system_clock> start, end;
+    chrono::duration<double> elapsed_time;
     pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
     vector<thread> thd;
@@ -376,5 +378,5 @@ int main(int argc, char* argv[]){
 
     end = chrono::system_clock::now();
     elapsed_time = end-start;
-    cout << "Time elapsed: " << elapsed_time.count() << endl;
+    cout << elapsed_time.count() << endl;
 }
