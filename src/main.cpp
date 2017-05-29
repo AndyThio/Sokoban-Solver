@@ -50,6 +50,9 @@ mutex pqMut;
 condition_variable cpq;
 mutex cpqMut;
 
+condition_variable isdone;
+mutex isdoneMut;
+
 mutex btMut;
 
 struct histNode{
@@ -206,10 +209,13 @@ void printBt(vector<int> bt){
 }
 
 bool isrepeat(const hist_cont &h, gameState c){
+    auto temp = histNode(c);
     pthread_rwlock_rdlock(&asLock);
-    bool ret = h.find(histNode(c)) != h.end();
+    auto ret1 = h.find(temp);
+    auto ret2 = h.end();
     pthread_rwlock_unlock(&asLock);
-    return ret;
+    return ret1 != ret2;
+    
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq){
@@ -223,6 +229,7 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
                 btMut.lock();
                 finalbt = g.getlastmove();
                 btMut.unlock();
+                isdone.notify_all();
                 return;
             }
             int heur = parent_depth+1+g.getheur();
@@ -298,6 +305,8 @@ void findSolution(gameState s){
         while(thd.size() < max_threads){
             thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
+        unique_lock<mutex> wlk(isdoneMut);
+        isdone.wait(wlk);
     }
     
     cpq.notify_all();
