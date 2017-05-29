@@ -3,8 +3,8 @@ DEBUG = -g
 DEBUGGER = gdb
 BIN = ../bin/
 OBJS = main.o gameState.o
-CFLAGS = -c -std=c++11 -pthread
-OFLAGS = -std=c++11 -pthread
+CFLAGS = -c -std=c++11 -o3 -pthread
+OFLAGS = -std=c++11 -o3 -pthread
 
 all: bin $(OBJS) 
 	$(CC) $(OFLAGS) $(OBJS) -o $(BIN)main.out

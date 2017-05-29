@@ -52,6 +52,9 @@ mutex pqMut;
 condition_variable cpq;
 mutex cpqMut;
 
+condition_variable isdone;
+mutex isdoneMut;
+
 mutex btMut;
 mutex printMut;
 
@@ -219,15 +222,16 @@ bool isrepeat(const hist_cont &h, gameState c, chrono::duration<double> &astime_
     ++asrc;
     ++histc;
     ++findc;
-    asstart = chrono::system_clock::now();
-    pthread_rwlock_rdlock(&asLock);
-    asend = chrono::system_clock::now();
     hstart = chrono::system_clock::now();
     auto temp = histNode(c);
     hend = chrono::system_clock::now();
+    asstart = chrono::system_clock::now();
+    pthread_rwlock_rdlock(&asLock);
+    asend = chrono::system_clock::now();
     fstart = chrono::system_clock::now();
-    bool ret = h.find(temp) != h.end();
+    auto ret1 = h.find(temp);
     fend = chrono::system_clock::now();
+    auto ret2 = h.end();
     pthread_rwlock_unlock(&asLock);
     astime_r += asend - asstart;
     histtime += hend - hstart;
@@ -235,7 +239,7 @@ bool isrepeat(const hist_cont &h, gameState c, chrono::duration<double> &astime_
     asrv.push_back(asend-asstart);
     hv.push_back(hend-hstart);
     findv.push_back(fend - fstart);
-    return ret;
+    return ret1 != ret2;
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq,
@@ -278,6 +282,7 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
                 btMut.lock();
                 finalbt = g.getlastmove();
                 btMut.unlock();
+                isdone.notify_all();
                 return;
             }
             int heur = parent_depth+1+g.getheur();
@@ -418,6 +423,8 @@ void findSolution(gameState s){
         while(thd.size() < max_threads){
             thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
         }
+        unique_lock<mutex> wlk(isdoneMut);
+        isdone.wait(wlk);
     }
 
     cpq.notify_all();
