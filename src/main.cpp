@@ -295,6 +295,7 @@ void expandNode(const queueNode g, hist_cont &alreadyseen, pqType &pq){
 void findSolution(gameState s){
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
+    int sc = 0;
     pqType pq;
     pq.push(queueNode(s, 0, s.getheur()));
     vector<thread> thd;
@@ -334,7 +335,11 @@ void findSolution(gameState s){
         pq.pop();
         pqempty = pq.empty();
         pthread_rwlock_unlock(&pqLock);
+        start= chrono::system_clock::now();
         thd.push_back(thread(expandNode,temp,ref(alreadyseen),ref(pq)));
+        end= chrono::system_clock::now();
+        elapsed_time += end - start;
+        ++sc;
         //expandNode(temp,alreadyseen,pq);
     }
     //cout << "priting results" << endl;
@@ -343,6 +348,7 @@ void findSolution(gameState s){
     for(auto &e: thd){
         e.join();
     }
+    cout << elapsed_time.count() << ", " << elapsed_time.count()/sc << ", ";
     //TODO: generate some kind of backtrace
 
 
