@@ -3,8 +3,8 @@ DEBUG = -g
 DEBUGGER = gdb
 BIN = ../bin/
 OBJS = main.o gameState.o
-CFLAGS = -c -std=c++11 -pthread
-OFLAGS = -std=c++11 -pthread
+CFLAGS = -c -std=c++11 -o3 -pthread
+OFLAGS = -std=c++11 -o3 -pthread
 
 all: bin $(OBJS)
 	$(CC) $(OFLAGS) $(OBJS) -o $(BIN)main.out
@@ -27,6 +27,9 @@ test: bin $(OBJS) check.o
 
 run: all $(BIN)main.out
 	$(BIN)main.out
+	
+test: all
+	$(BIN)main.out ../data/autosokoban/5/1.txt
 
 run-g: debug $(BIN)mainDebug.out
 	$(DEBUGGER) $(BIN)mainDebug.out

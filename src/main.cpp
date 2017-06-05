@@ -47,11 +47,15 @@ int num_locks = 4;
 atomic_bool isfinished(false);
 vector<int> finalbt;
 
+int asleep_threads = 0;
 vector<pthread_rwlock_t> asLock;
+
 mutex pqMut;
 
 condition_variable cpq;
 mutex cpqMut;
+
+condition_variable isdone;
 
 mutex btMut;
 
@@ -209,12 +213,22 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 
+void unsolvable(){
+    cerr << "Error: Puzzle is unsolvable" << endl;
+    ofstream rfil;
+    rfil.open("../bin/results.txt");
+    rfil << "Error: Puzzle is unsolvable" << endl;
+    rfil.close();
+}
+
+
 bool isrepeat(const hist_cont &h, gameState c, const unsigned int hashnum){
     auto temp = histNode(c);
     pthread_rwlock_rdlock(&asLock.at(hashnum));
-    bool ret = h.at(hashnum).find(temp) != h.at(hashnum).end();
+    auto ret1 = h.at(hashnum).find(temp);
+    auto ret2 = h.at(hashnum).end();
     pthread_rwlock_unlock(&asLock.at(hashnum));
-    return ret;
+    return ret1 != ret2;
 }
 
 void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq,
@@ -237,10 +251,13 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
             pthread_rwlock_unlock(&asLock.at(hashnum));
     
             if(g.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = g.getlastmove();
-                btMut.unlock();
+                if(!isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    printBt(g.getlastmove());
+                    btMut.unlock();
+                    cpq.notify_all();
+                }
                 return;
             }
             int heur = parent_depth+1+g.getheur();
@@ -258,30 +275,34 @@ void expandNode(hist_cont &alreadyseen, pqType &pq, const int id){
     chrono::milliseconds ms{100};
     while(!isfinished){
         
-        pqMut.lock();
-        pqempty = pq.empty();
-        if(!pqempty){
+        unique_lock<mutex> lk(pqMut);
+        if(!pq.empty()){
             temp = pq.top();
             pq.pop();
         }
-        pqMut.unlock();
-        
-        while(pqempty){
-            unique_lock<mutex> lk(cpqMut);
-            cpq.wait_for(lk,ms);
-            
-            if(isfinished){
-                return;
+        else{
+            while(pq.empty()){
+                ++asleep_threads;
+                if(asleep_threads >= max_threads && !isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    unsolvable();
+                    btMut.unlock();
+                    lk.unlock();
+                    cpq.notify_all();
+                    return;
+                }
+                cpq.wait(lk);
+                --asleep_threads;
+                
+                if(isfinished){
+                    return;
+                }
             }
-            
-            pqMut.lock();
-            pqempty = pq.empty();
-            if(!pqempty){
-                temp = pq.top();
-                pq.pop();
-            }
-            pqMut.unlock();
+            temp = pq.top();
+            pq.pop();
         }
+        lk.unlock();
         
         gameState tempr = temp.arena;
         gameState templ = tempr;
@@ -312,12 +333,14 @@ bool isrepeat_l(const hist_cont_l &h, gameState c){
 void expandDir_l(gameState g, int parent_depth, hist_cont_l &alreadyseen, pqType &pq){
         if(!isrepeat_l(alreadyseen, g)){
             alreadyseen.insert(histNode(g));
-    
             if(g.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = g.getlastmove();
-                btMut.unlock();
+                if(!isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    printBt(g.getlastmove());
+                    btMut.unlock();
+                    cpq.notify_all();
+                }
                 return;
             }
             int heur = parent_depth+1+g.getheur();
@@ -333,33 +356,37 @@ void expandNode_l(pqType &pq){
     bool pqempty;
     hist_cont_l alreadyseen;
     queueNode temp;
-    chrono::milliseconds ms{100};
     while(!isfinished){
         
-        pqMut.lock();
-        pqempty = pq.empty();
-        if(!pqempty){
+        unique_lock<mutex> lk(pqMut);
+        if(!pq.empty()){
             temp = pq.top();
             pq.pop();
         }
-        pqMut.unlock();
-        
-        while(pqempty){
-            unique_lock<mutex> lk(cpqMut);
-            cpq.wait_for(lk,ms);
-            
-            if(isfinished){
-                return;
+        else{
+            while(pq.empty()){
+                ++asleep_threads;
+                if(asleep_threads >= max_threads && !isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    unsolvable();
+                    btMut.unlock();
+                    lk.unlock();
+                    cpq.notify_all();
+                    return;
+                }
+                cpq.wait(lk);
+                --asleep_threads;
+                
+                if(isfinished){
+                    return;
+                }
             }
-            
-            pqMut.lock();
-            pqempty = pq.empty();
-            if(!pqempty){
-                temp = pq.top();
-                pq.pop();
-            }
-            pqMut.unlock();
+            temp = pq.top();
+            pq.pop();
         }
+        lk.unlock();
+        
         
         gameState tempr = temp.arena;
         gameState templ = tempr;
@@ -391,30 +418,20 @@ void findSolution(gameState s){
     
     queueNode temp = pq.top();
     if(hashType == 3){
-        while(!isfinished){
-            while(thd.size() < max_threads){
-                thd.push_back(thread(expandNode_l,ref(pq)));
-            }
+        while(thd.size() < max_threads){
+            thd.push_back(thread(expandNode_l,ref(pq)));
         }
     }
     else{
-        while(!isfinished){
-            while(thd.size() < max_threads){
-                thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq), id));
-                ++id;
-            }
+        while(thd.size() < max_threads){
+            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq), id));
+            ++id;
         }
     }
-    
-    cpq.notify_all();
     
     for(auto &e: thd){
         e.join();
     }
-    
-    btMut.lock();
-    printBt(finalbt);
-    btMut.unlock();
 }
 
 int main(int argc, char* argv[]){
@@ -445,6 +462,7 @@ int main(int argc, char* argv[]){
     for(auto &e: asLock){
         pthread_rwlock_init(&e, NULL);
     }
+    
     chrono::time_point<chrono::system_clock> start, end;
     chrono::duration<double> elapsed_time;
     
