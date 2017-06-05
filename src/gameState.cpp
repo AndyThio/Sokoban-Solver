@@ -11,6 +11,8 @@ gameState::gameState()
 
 gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p, int w)
 {
+    int b_cnt = 0;
+    int t_cnt = 0;
     for(int i = 0; i < field.size(); ++i){
         for(int j = 0; j < field.at(i).size(); ++j){
             switch(field.at(i).at(j)){
@@ -20,16 +22,20 @@ gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p,
                     walls.push_back(false);
                     break;
                 case 1:
+                    ++b_cnt;
                     barrels.push_back(true);
                     targets.push_back(false);
                     walls.push_back(false);
                     break;
                 case 2:
+                    ++t_cnt;
                     barrels.push_back(false);
                     targets.push_back(true);
                     walls.push_back(false);
                     break;
                 case 3:
+                    ++b_cnt;
+                    ++t_cnt;
                     barrels.push_back(true);
                     targets.push_back(true);
                     walls.push_back(false);
@@ -45,6 +51,7 @@ gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p,
                     walls.push_back(false);
                     break;
                 case 6:
+                    ++t_cnt;
                     barrels.push_back(false);
                     targets.push_back(true);
                     walls.push_back(false);
@@ -57,6 +64,10 @@ gameState::gameState(std::vector<std::vector<int> > field, std::pair<int,int> p,
     }
     position = p;
     width = w;
+    if(b_cnt != t_cnt || b_cnt == 0 || t_cnt == 0){
+        std::cerr << "Error: Invalid number of barrels or targets" << std::endl;
+        exit(0);
+    }
 }
 
 bool gameState::updateArena(std::pair<int,int> move){

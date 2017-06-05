@@ -44,6 +44,8 @@ int max_threads = thread::hardware_concurrency();
 atomic_bool isfinished(false);
 vector<int> finalbt;
 
+int asleep_threads = 0;
+
 pthread_rwlock_t asLock;
 mutex pqMut;
 
@@ -51,7 +53,6 @@ condition_variable cpq;
 mutex cpqMut;
 
 condition_variable isdone;
-mutex isdoneMut;
 
 mutex btMut;
 
@@ -208,6 +209,14 @@ void printBt(vector<int> bt){
     rfil.close();
 }
 
+void unsolvable(){
+    cerr << "Error: Puzzle is unsolvable" << endl;
+    ofstream rfil;
+    rfil.open("../bin/results.txt");
+    rfil << "Error: Puzzle is unsolvable" << endl;
+    rfil.close();
+}
+
 bool isrepeat(const hist_cont &h, gameState c){
     auto temp = histNode(c);
     pthread_rwlock_rdlock(&asLock);
@@ -255,7 +264,18 @@ void expandNode(hist_cont &alreadyseen, pqType &pq){
         }
         else{
             while(pq.empty()){
+                ++asleep_threads;
+                if(asleep_threads >= max_threads && !isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    unsolvable();
+                    btMut.unlock();
+                    lk.unlock();
+                    cpq.notify_all();
+                    return;
+                }
                 cpq.wait(lk);
+                --asleep_threads;
                 
                 if(isfinished){
                     return;
@@ -314,7 +334,6 @@ int main(int argc, char* argv[]){
     if(argc > 2){
         max_threads = atoi(argv[2]);
     }
-    
     
     pthread_rwlock_init(&asLock, NULL);
     chrono::time_point<chrono::system_clock> start, end;
