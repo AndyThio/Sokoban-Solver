@@ -20,6 +20,9 @@ debug: $(OBJS)
 
 run: all $(BIN)main.out
 	$(BIN)main.out
+	
+test: all
+	$(BIN)main.out ../data/autosokoban/5/1.txt
 
 run-g: debug $(BIN)mainDebug.out
 	$(DEBUGGER) $(BIN)mainDebug.out

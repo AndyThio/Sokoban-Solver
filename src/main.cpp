@@ -223,13 +223,15 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
             pthread_rwlock_wrlock(&asLock);
             alreadyseen.insert(histNode(g));
             pthread_rwlock_unlock(&asLock);
-    
+   
             if(g.isSolved()){
-                isfinished = true;
-                btMut.lock();
-                finalbt = g.getlastmove();
-                btMut.unlock();
-                isdone.notify_all();
+                if(!isfinished){
+                    isfinished = true;
+                    btMut.lock();
+                    printBt(g.getlastmove());
+                    btMut.unlock();
+                    cpq.notify_all();
+                }
                 return;
             }
             int heur = parent_depth+1+g.getheur();
@@ -244,33 +246,26 @@ void expandDir(gameState g, int parent_depth, hist_cont &alreadyseen, pqType &pq
 void expandNode(hist_cont &alreadyseen, pqType &pq){
     bool pqempty;
     queueNode temp;
-    chrono::milliseconds ms{100};
     while(!isfinished){
         
-        pqMut.lock();
-        pqempty = pq.empty();
-        if(!pqempty){
+        unique_lock<mutex> lk(pqMut);
+        if(!pq.empty()){
             temp = pq.top();
             pq.pop();
         }
-        pqMut.unlock();
-        
-        while(pqempty){
-            unique_lock<mutex> lk(cpqMut);
-            cpq.wait_for(lk,ms);
-            
-            if(isfinished){
-                return;
+        else{
+            while(pq.empty()){
+                cpq.wait(lk);
+                
+                if(isfinished){
+                    return;
+                }
             }
-            
-            pqMut.lock();
-            pqempty = pq.empty();
-            if(!pqempty){
-                temp = pq.top();
-                pq.pop();
-            }
-            pqMut.unlock();
+            temp = pq.top();
+            pq.pop();
         }
+        lk.unlock();
+        
         
         gameState tempr = temp.arena;
         gameState templ = tempr;
@@ -299,25 +294,13 @@ void findSolution(gameState s){
     gameState finishedState;
     hist_cont alreadyseen;
     
-    queueNode temp = pq.top();
-    
-    while(!isfinished){
-        while(thd.size() < max_threads){
-            thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
-        }
-        unique_lock<mutex> wlk(isdoneMut);
-        isdone.wait(wlk);
+    while(thd.size() < max_threads){
+        thd.push_back(thread(expandNode,ref(alreadyseen),ref(pq)));
     }
-    
-    cpq.notify_all();
     
     for(auto &e: thd){
         e.join();
     }
-    
-    btMut.lock();
-    printBt(finalbt);
-    btMut.unlock();
 }
 
 int main(int argc, char* argv[]){
